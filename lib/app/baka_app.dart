@@ -20,6 +20,7 @@ import 'package:baka/widgets/navigation/bottom_navigation.dart';
 import 'package:baka/widgets/platform/macos/macos_title_bar.dart';
 import 'package:baka/widgets/platform/windows/windows_sidebar.dart';
 import 'package:baka/widgets/platform/windows/windows_title_bar.dart';
+import 'package:baka/pages/browse/browse_page.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -145,7 +146,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _appState = Get.find<AppState>();
 
-    _pages = List<Widget?>.filled(Instances.isDesktopPlatform ? 6 : 4, null);
+    _pages = List<Widget?>.filled(Instances.isDesktopPlatform ? 7 : 4, null);
   }
 
   @override
@@ -191,6 +192,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             ),
             3 => const LibraryPage(initialIndex: 1, embedded: true),
             4 => const LibraryPage(embedded: true),
+            6 => const BrowsePage(),
             _ => const DownloadManagerPage(embedded: true),
           }
         : switch (index) {
