@@ -1,27 +1,33 @@
 name: Build Windows (custom)
 
-# 手动触发：在 GitHub 仓库页面的 Actions 标签里点 "Run workflow"
+# Manual trigger only: builds a Windows x64 bundle and uploads it as an artifact.
 on:
   workflow_dispatch:
     inputs:
       build_mode:
-        description: "编译模式"
+        description: "Build mode"
         required: true
         type: choice
         default: release
         options:
           - release
           - debug
+      source_ref:
+        description: "Branch or tag to build (leave empty to build the dispatched ref)"
+        required: false
+        type: string
 
 jobs:
   build-windows:
     name: Build Windows x64
-    runs-on: windows-latest   # GitHub 官方 Windows 机器，已预装 VS2022 + MSVC + CMake + Ninja
+    runs-on: windows-latest
     steps:
-      - name: 检出代码
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref || github.ref }}
 
-      - name: 安装 Flutter（读取仓库内 .fvmrc 指定的版本）
+      - name: Setup Flutter (from .fvmrc)
         uses: subosito/flutter-action@v2
         with:
           flutter-version-file: .fvmrc
@@ -29,16 +35,16 @@ jobs:
           cache: true
           pub-cache: true
 
-      - name: 开启 Windows 桌面支持
+      - name: Enable Windows desktop
         run: flutter config --enable-windows-desktop
 
-      - name: 拉取依赖（含仓库内 local_deps 的本地 fork 包）
+      - name: Resolve dependencies
         run: flutter pub get
 
-      - name: 编译 Windows
+      - name: Build Windows
         run: flutter build windows --${{ inputs.build_mode || 'release' }}
 
-      - name: 上传编译产物
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: baka-windows-x64
