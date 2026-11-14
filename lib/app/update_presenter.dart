@@ -10,7 +10,14 @@ import 'package:flutter/foundation.dart';
 
 const _kAnnouncementContentKey = 'last_announcement_content';
 
-/// 按语义化版本比较，remote 比 local 新时返回 true。
+/// 定制版（B9 补完）：彻底不发官方版本检查请求。
+/// B9 只把 hasUpdate/forceUpdate 置 false，仍会请求 version.anibaka.com；
+/// 该域名在当前网络下被解析到 1.1.1.1（无效地址），每次进首页都白等
+/// 约 21 秒并触发全局「网络连接失败」提示。设为 false 可恢复官方检查
+/// （不推荐：官方安装包会覆盖定制版）。
+const bool disableOfficialUpdateCheck = true;
+
+/// ????????,remote ? local ???? true?
 bool _isVersionNewer(String remoteVersion, String localVersion) {
   var remoteOffset = 0;
   var localOffset = 0;
@@ -54,10 +61,21 @@ class VersionService {
   }
 
   static Future<UpdateInfo> checkUpdateInfo() async {
+    final localVersion = Instances.appVersion;
+    // 定制版：官方更新检查已禁用，直接返回「无更新」，不再发起网络请求。
+    // 公告获取（getPostDetail）在 _checkAndShowUpdate 中照常执行，不受影响。
+    if (disableOfficialUpdateCheck) {
+      return UpdateInfo(
+        hasUpdate: false,
+        forceUpdate: false,
+        changelog: '',
+        downloadUrl: '',
+        latestVersion: localVersion,
+      );
+    }
     final appInfo = await apiTransport.getJson<Map<String, dynamic>>(
       'https://version.anibaka.com/',
     );
-    final localVersion = Instances.appVersion;
 
     final appUpdate = appInfo['app_update'] as Map<String, dynamic>;
     final platforms = appUpdate['platforms'] as Map<String, dynamic>;
@@ -90,7 +108,7 @@ class VersionService {
     try {
       updateInfo = await checkUpdateInfo();
     } catch (e) {
-      debugPrint('版本检查失败: $e');
+      debugPrint('??????: $e');
     }
 
     String announcementContent = '';
@@ -102,13 +120,13 @@ class VersionService {
         announcementContent,
       );
     } catch (e) {
-      debugPrint('公告获取失败: $e');
+      debugPrint('??????: $e');
       announcementContent =
           Instances.sp.getString(_kAnnouncementContentKey) ?? '';
     }
 
-    final hasUpdate = updateInfo?.hasUpdate ?? false;
-    final forceUpdate = updateInfo?.forceUpdate ?? false;
+    final hasUpdate = false;
+    final forceUpdate = false;
     final announcementId = 'announcement_$host';
     if (contentVisibility.isDismissed(
       Instances.sp,

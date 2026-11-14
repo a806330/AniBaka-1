@@ -200,9 +200,119 @@ class SourceAdapter implements PipelineHost {
     _dioDirect = null;
   }
 
+  /// G1: 单集站（Hanime1）把「作品 1」「作品 2」当成两个独立视频返回，
+  /// 这里按去掉集数后缀的标题归并成一部作品，其余集编码进 seriesId。
+  /// 只对白名单内的源生效，其他源完全不受影响。
+  static const Set<String> _titleGroupingSourceIds = {'hanimeone'};
+  static const String _groupTag = '#baka_group=';
+  static final RegExp _titleEpisodeSuffix = RegExp(
+    r'\s*(?:'
+    r'[(（]?\s*(?:第\s*)?(\d{1,3})\s*(?:集|話|话|章|部|期)?\s*[)）]?'
+    r'|(?:Part|part|PART|Ep|EP|ep|Episode|episode|E)\s*\.?\s*(\d{1,3})'
+    r')\s*$',
+  );
+
+  List<Series> _groupSeriesByTitle(List<Series> input) {
+    if (!_titleGroupingSourceIds.contains(rule.id)) return input;
+    final output = <Series>[];
+    final slotOf = <String, int>{};
+    final members = <String, List<({String id, int number})>>{};
+    for (final series in input) {
+      final match = _titleEpisodeSuffix.firstMatch(series.name);
+      final base = match == null
+          ? ''
+          : series.name.replaceFirst(_titleEpisodeSuffix, '').trim();
+      if (match == null || base.length < 2) {
+        output.add(series);
+        continue;
+      }
+      final number =
+          int.tryParse(match.group(1) ?? match.group(2) ?? '') ?? 0;
+      if (!members.containsKey(base)) {
+        members[base] = <({String id, int number})>[];
+        slotOf[base] = output.length;
+        output.add(series);
+      }
+      members[base]!.add((id: series.seriesId, number: number));
+    }
+    for (final entry in members.entries) {
+      final group = entry.value;
+      if (group.length < 2) continue;
+      group.sort((a, b) => a.number.compareTo(b.number));
+      final slot = slotOf[entry.key]!;
+      final placeholder = output[slot];
+      final extras = [for (final item in group.skip(1)) item.id];
+      final encoded = Uri.encodeComponent(extras.join('|'));
+      output[slot] = Series(
+        '${group.first.id}${_groupTag}$encoded',
+        entry.key,
+        image: placeholder.image,
+        description: placeholder.description,
+        bgmId: placeholder.bgmId,
+        score: placeholder.score,
+      );
+    }
+    return output;
+  }
+
+  List<String>? _decodeGroupedSeries(String seriesId) {
+    if (!_titleGroupingSourceIds.contains(rule.id)) return null;
+    final at = seriesId.indexOf(_groupTag);
+    if (at < 0) return null;
+    try {
+      final first = seriesId.substring(0, at);
+      final rest = Uri.decodeComponent(
+        seriesId.substring(at + _groupTag.length),
+      );
+      return [first, ...rest.split('|').where((e) => e.isNotEmpty)];
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<List<Source>> _detailSources(String seriesId) async {
+    final grouped = _decodeGroupedSeries(seriesId);
+    if (grouped != null && grouped.isNotEmpty) {
+      return [
+        Source(
+          [
+            for (var i = 0; i < grouped.length; i++)
+              Episode(grouped[i], i, '第${i + 1}集'),
+          ],
+          rule.name,
+        ),
+      ];
+    }
+    return _interpreter.runDetail(rule, this, seriesId);
+  }
+
   Future<List<Series>> search(String query, {bool enhanceWithBgm = true}) =>
       runOperation(() async {
         final series = await _interpreter.runSearch(rule, this, query);
+        if (!enhanceWithBgm) return _groupSeriesByTitle(series);
+        await runConcurrent(series.length, 5, (index) async {
+          final item = series[index];
+          try {
+            final subject = await resolveBgmSubject(title: item.name);
+            SourceOperation.check();
+            item.image = subject?.imageUrl ?? item.image;
+            item.description = subject?.summary ?? item.description ?? '暂无简介';
+            item.bgmId = subject?.subjectId ?? item.bgmId;
+            item.score = subject?.score ?? item.score;
+          } catch (_) {
+            SourceOperation.check();
+          }
+        });
+        return _groupSeriesByTitle(series);
+      });
+
+  /// 拉取「浏览」页聚合首页：运行源规则的 home 管线，产出卡片列表。
+  ///
+  /// 与 [search] 同款地用 BGM 信息补全封面 / 简介 / 评分。home 段为空或运行
+  /// 失败均返回空列表，由 UI 回退到占位。
+  Future<List<Series>> fetchHome({bool enhanceWithBgm = true}) =>
+      runOperation(() async {
+        final series = await _interpreter.runHome(rule, this);
         if (!enhanceWithBgm) return series;
         await runConcurrent(series.length, 5, (index) async {
           final item = series[index];
@@ -220,10 +330,31 @@ class SourceAdapter implements PipelineHost {
         return series;
       });
 
+  /// 拉取某个分类下的卡片列表，[categoryId] 会作为 `{categoryId}` 传入管线。
+  Future<List<Series>> fetchCategory(
+    String categoryId, {
+    bool enhanceWithBgm = true,
+  }) => runOperation(() async {
+    final series = await _interpreter.runCategory(rule, this, categoryId);
+    if (!enhanceWithBgm) return series;
+    await runConcurrent(series.length, 5, (index) async {
+      final item = series[index];
+      try {
+        final subject = await resolveBgmSubject(title: item.name);
+        SourceOperation.check();
+        item.image = subject?.imageUrl ?? item.image;
+        item.description = subject?.summary ?? item.description ?? '暂无简介';
+        item.bgmId = subject?.subjectId ?? item.bgmId;
+        item.score = subject?.score ?? item.score;
+      } catch (_) {
+        SourceOperation.check();
+      }
+    });
+    return series;
+  });
+
   Future<PlaybackCatalog> getPlaybackCatalog(String seriesId) => runOperation(
-    () async => PlaybackCatalog.fromSources(
-      await _interpreter.runDetail(rule, this, seriesId),
-    ),
+    () async => PlaybackCatalog.fromSources(await _detailSources(seriesId)),
   );
 
   /// Runs the play pipeline for [episodeId]. Rules without per-request media

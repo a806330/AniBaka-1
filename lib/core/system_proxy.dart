@@ -36,6 +36,14 @@ class SystemProxyService {
   /// findProxy 因此不必对每个请求都跑一遍 findProxyFromEnvironment。
   static bool _envProxyPresent = false;
 
+  /// 定制版（v15.5）：自动绕开「本机回环代理」。
+  /// dev-sidecar / WattToolkit / Clash 等本地代理会接管 Baka 的全部请求；
+  /// 其自身 DNS 优选可能把番剧源解析到无效 IP（实测 1.1.1.1），造成
+  /// 搜索与下载 21-46 秒超时。此类代理一律直连，远程代理仍照常跟随系统设置。
+  static const bool bypassLoopbackProxy = true;
+  static bool _envProxyLoopback = false;
+  static bool _registryProxyLoopback = false;
+
   static const _envProxyKeys = <String>[
     'http_proxy',
     'HTTP_PROXY',
@@ -53,7 +61,12 @@ class SystemProxyService {
     _prefixBypass = const [];
     _fallbackRegexBypass = const [];
     _bypassLocal = false;
+    _envProxyLoopback = false;
+    _registryProxyLoopback = false;
     _envProxyPresent = _envProxyKeys.any(Platform.environment.containsKey);
+    _envProxyLoopback = _envProxyKeys.any(
+      (key) => _isLoopbackServer(Platform.environment[key]),
+    );
     if (Platform.isWindows) {
       RegistryKey? key;
       try {
@@ -66,6 +79,9 @@ class SystemProxyService {
           if (server != null && server.isNotEmpty) {
             _parseProxyServer(server);
             _parseBypass(key.getStringValue('ProxyOverride') ?? '');
+            _registryProxyLoopback =
+                _isLoopbackServer(_defaultProxy) ||
+                _proxyByScheme.values.any((v) => _isLoopbackServer(v));
           }
         }
       } catch (_) {
@@ -76,6 +92,8 @@ class SystemProxyService {
         _prefixBypass = const [];
         _fallbackRegexBypass = const [];
         _bypassLocal = false;
+        _envProxyLoopback = false;
+        _registryProxyLoopback = false;
       } finally {
         key?.close();
       }
@@ -105,10 +123,15 @@ class SystemProxyService {
   static String directProxy(Uri _) => 'DIRECT';
 
   static String findProxy(Uri uri) {
-    if (_envProxyPresent) {
+    // 定制版：本机回环代理不接管 Baka 流量（含环境变量注入的那一个）。
+    // 远程代理仍照常跟随，且保留 '; DIRECT' 的失败回退。
+    final bool skipEnv = bypassLoopbackProxy && _envProxyLoopback;
+    final bool skipReg = bypassLoopbackProxy && _registryProxyLoopback;
+    if (_envProxyPresent && !skipEnv) {
       final environmentProxy = HttpClient.findProxyFromEnvironment(uri);
       if (environmentProxy != 'DIRECT') return environmentProxy;
     }
+    if (skipReg) return 'DIRECT';
 
     final server = _proxyForScheme(uri.scheme);
     if (server == null || _shouldBypass(uri.host)) return 'DIRECT';
@@ -178,6 +201,25 @@ class SystemProxyService {
     return _proxyByScheme[lower] ??
         _proxyByScheme['https'] ??
         _proxyByScheme['http'];
+  }
+
+  /// 判断代理地址是否指向本机（127.* / localhost / ::1）。
+  static bool _isLoopbackServer(String? value) {
+    if (value == null) return false;
+    var result = value.trim().toLowerCase();
+    if (result.isEmpty) return false;
+    final scheme = result.indexOf('://');
+    if (scheme >= 0) result = result.substring(scheme + 3);
+    final at = result.lastIndexOf('@');
+    if (at >= 0) result = result.substring(at + 1);
+    final slash = result.indexOf('/');
+    if (slash >= 0) result = result.substring(0, slash);
+    if (result.startsWith('[::1]')) return true;
+    final host = result.split(':').first.trim();
+    return host == 'localhost' ||
+        host == '::1' ||
+        host == '127.0.0.1' ||
+        host.startsWith('127.');
   }
 
   static String? _normalizeServer(String value) {

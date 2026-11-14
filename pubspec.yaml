@@ -50,9 +50,7 @@ dependencies:
   http: ^1.6.0
   # Organization fork: reusable DoH/ECH clients and Windows compatibility fixes.
   ech_http:
-    git:
-      url: https://github.com/AniBakaBaka/ech_http.git
-      ref: cc730936d57561a6ce3889a922ed1a4e561e9fe0
+    path: local_deps/ech_http
   web_socket_channel: ^3.0.3
   ios_orientation: ^0.0.7
   webview_flutter: ^4.14.1
@@ -62,10 +60,7 @@ dependencies:
 
   # Upstream fork: omit Windows brightness registration to preserve HDR output.
   screen_brightness:
-    git:
-      url: https://github.com/AniBakaBaka/screen_brightness.git
-      ref: df73d230307caee2d1910f254eeacdc3d360c204
-      path: screen_brightness
+    path: local_deps/screen_brightness
   crypto: ^3.0.7
   encrypt: ^5.0.3
   # 4.x migrates to the separate material_ui package.
@@ -81,10 +76,7 @@ dependencies:
   media_kit: ^1.2.6 # Primary package.
   # Upstream fork: Windows video bridge, enabled in windows/CMakeLists.txt.
   media_kit_video:
-    git:
-      url: https://github.com/AniBakaBaka/media-kit.git
-      ref: 12e1fdd72ffec6ef08f2f1b78490ca95632be4d5
-      path: media_kit_video
+    path: local_deps/media_kit_video
   media_kit_libs_video: ^1.0.7
   flutter_volume_controller: ^2.0.2
   dlna_dart: ^0.1.1

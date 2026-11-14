@@ -33,6 +33,10 @@
 *.p12
 *.pfx
 *.pem
+# Not a credential: Mozilla CA root bundle compiled into the ech_http native
+# bridge via CMakeLists.txt `file(READ ... cacert.pem ...)`. Without it the
+# native-assets hook fails on CI with an opaque "Building native assets failed".
+!local_deps/ech_http/src/cacert.pem
 *.key
 **/key.properties
 **/local.properties

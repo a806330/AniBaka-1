@@ -260,6 +260,24 @@ Future<bool> showAnnouncementDialog({
                         ),
                       ],
                     ),
+                    if (updateInfo.hasUpdate)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: colorScheme.errorContainer
+                                .withValues(alpha: 0.35),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            '你正在使用定制版（自由路径 / 多任务 / 提速）。'
+                            '官方更新会覆盖定制改动，更新后请通过“Baka 启动器”重新应用。',
+                            style: TextStyle(fontSize: 13),
+                          ),
+                        ),
+                      ),
                     if (updateInfo.changelog.isNotEmpty) ...[
                       const SizedBox(height: 20),
                       Container(

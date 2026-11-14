@@ -1,0 +1,10 @@
+#pragma once
+#include <string>
+inline const std::string &eh_ca_bundle() {
+  static const std::string roots = [] {
+    std::string result;
+@EH_CA_APPEND@
+    return result;
+  }();
+  return roots;
+}
