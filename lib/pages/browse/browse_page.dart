@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:baka/pages/home/miniapp_page.dart';
 import 'package:baka/source/models/series.dart';
 import 'package:baka/source/models/source_rule.dart';
 import 'package:baka/source/source_adapter.dart';
@@ -47,9 +48,18 @@ class _SourceSection extends StatefulWidget {
   State<_SourceSection> createState() => _SourceSectionState();
 }
 
-class _SourceSectionState extends State<_SourceSection> {
+class _SourceSectionState extends State<_SourceSection>
+    with AutomaticKeepAliveClientMixin {
   SourceAdapter? _adapter;
   late final Future<List<Series>> _future;
+
+  /// 划线出视口时不销毁本区块，避免滚回来重新 initState 重新拉网络。
+  @override
+  bool get wantKeepAlive => true;
+
+  /// 已加载过的首页结果按源暂存 10 分钟：切页回来即便区块被重建，也直接
+  /// 命中缓存，不再重复请求。只缓存真正拉取到的内容，不做全量预加载。
+  static final Map<String, _HomeCacheEntry> _homeCache = {};
 
   @override
   void initState() {
@@ -61,11 +71,33 @@ class _SourceSectionState extends State<_SourceSection> {
   Future<List<Series>> _loadHome() async {
     final adapter = _adapter;
     if (adapter == null || adapter.rule.home.isEmpty) return const [];
+    final key = widget.source.key;
+    final cached = _homeCache[key];
+    if (cached != null && !cached.isExpired) return cached.items;
     try {
-      return await adapter.fetchHome();
+      final items = await adapter.fetchHome();
+      if (items.isNotEmpty) {
+        _homeCache[key] = _HomeCacheEntry(items, DateTime.now());
+      }
+      return items;
     } catch (_) {
-      return const [];
+      // 请求失败时退回过期缓存，至少还能看到上次内容，而不是空白。
+      return cached?.items ?? const [];
     }
+  }
+
+  /// 打开源站原页面：复用应用内已有的通用 WebView 页，桌面端走 Edge WebView2。
+  void _openOriginalSite() {
+    final url = _adapter?.rule.baseUrl;
+    if (url == null || url.isEmpty) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => WebViewPage(
+          url: url,
+          title: widget.source.displayName,
+        ),
+      ),
+    );
   }
 
   void _openCategory(SourceCategory category) {
@@ -85,6 +117,7 @@ class _SourceSectionState extends State<_SourceSection> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final categories = _adapter?.rule.categories ?? const <SourceCategory>[];
@@ -128,6 +161,21 @@ class _SourceSectionState extends State<_SourceSection> {
                   ),
                 );
               },
+            ),
+            const SizedBox(width: 4),
+            Tooltip(
+              message: '打开原站',
+              child: IconButton(
+                icon: const Icon(Icons.open_in_new, size: 18),
+                color: colors.primary,
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints.tightFor(
+                  width: 32,
+                  height: 32,
+                ),
+                padding: EdgeInsets.zero,
+                onPressed: _openOriginalSite,
+              ),
             ),
           ],
         ),
@@ -369,4 +417,16 @@ class _SeriesCard extends StatelessWidget {
           color: colors.onSurfaceVariant,
         ),
       );
+}
+
+/// 单个源的首页缓存条目：记录拉取时间与结果，超过 TTL 视为过期。
+class _HomeCacheEntry {
+  const _HomeCacheEntry(this.items, this.savedAt);
+
+  final List<Series> items;
+  final DateTime savedAt;
+
+  bool get isExpired => DateTime.now().difference(savedAt) >= _ttl;
+
+  static const Duration _ttl = Duration(minutes: 10);
 }
