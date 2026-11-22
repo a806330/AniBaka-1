@@ -5,6 +5,7 @@ import 'package:baka/app/app_runtime.dart';
 import 'package:baka/app_state.dart';
 import 'package:baka/instance.dart';
 import 'package:baka/pages/home/home_page.dart';
+import 'package:baka/services/download/download_resolve_manager.dart';
 import 'package:baka/pages/library/library_page.dart';
 import 'package:baka/pages/mine/mine_page.dart';
 import 'package:baka/pages/player/download_page.dart';
@@ -16,6 +17,7 @@ import 'package:baka/widgets/navigation/bottom_navigation.dart';
 import 'package:baka/widgets/platform/macos/macos_title_bar.dart';
 import 'package:baka/widgets/platform/windows/windows_sidebar.dart';
 import 'package:baka/widgets/platform/windows/windows_title_bar.dart';
+import 'package:baka/pages/browse/browse_page.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
@@ -73,7 +75,12 @@ class BakaApp extends StatelessWidget {
                     mediaQuery.disableAnimations ||
                     appState.reduceVisualEffects,
               ),
-              child: child!,
+              child: Stack(
+                children: [
+                  child ?? const SizedBox.shrink(),
+                  const DownloadResolveBanner(),
+                ],
+              ),
             );
           }),
         );
@@ -101,7 +108,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   /// Keep visited tabs mounted during normal navigation.
   final _pages = List<Widget?>.filled(
-    Instances.isDesktopPlatform ? 6 : 4,
+    Instances.isDesktopPlatform ? 7 : 4,
     null,
   );
 
@@ -175,6 +182,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             ),
             3 => const LibraryPage(initialIndex: 1, embedded: true),
             4 => const LibraryPage(embedded: true),
+            6 => const BrowsePage(),
             _ => const DownloadManagerPage(embedded: true),
           }
         : switch (index) {

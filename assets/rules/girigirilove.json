@@ -1,58 +1,109 @@
 {
-  "format": "anx-rule/2",
-  "id": "girigirilove",
-  "name": "GirigiriLove",
-  "baseUrl": "https://ani.girigirilove.com",
-  "iconUrl": "https://ani.girigirilove.com/upload/anime.girigirilove.com_.png",
-  "description": "GirigiriLove动漫视频源，源网址ani.girigirilove.com",
-  "headers": {
+ "format": "anx-rule/2",
+ "id": "girigirilove",
+ "name": "GirigiriLove",
+ "baseUrl": "https://ani.girigirilove.com",
+ "iconUrl": "https://ani.girigirilove.com/upload/anime.girigirilove.com_.png",
+ "description": "GirigiriLove 动漫源（ani.girigirilove.com），走站点后端接口",
+ "headers": {
+  "Referer": "https://ani.girigirilove.com/"
+ },
+ "search": [
+  {
+   "op": "fetch",
+   "url": "https://m3u8.girigirilove.com/api.php/Vod/get_list?offset=0&limit=30&vod_name={keyword}",
+   "headers": {
     "Referer": "https://ani.girigirilove.com/"
+   }
   },
-  "search": [
-    {
-      "op": "fetch",
-      "url": "https://m3u8.girigirilove.com/api.php/Vod/get_list?vod_name={keyword}&offset=0&limit=100"
-    },
-    {
-      "op": "jsonSeries",
-      "listPath": "info.rows",
-      "idKey": "vod_id",
-      "nameKey": "vod_name",
-      "imageKey": "vod_pic",
-      "descKey": "vod_blurb",
-      "detailUrlTemplate": "/detail/{id}"
-    }
-  ],
-  "detail": [
-    {
-      "op": "regex",
-      "pattern": "/detail/(\\d+)",
-      "group": 1
-    },
-    {
-      "op": "fetch",
-      "url": "https://m3u8.girigirilove.com/api.php/Vod/get_detail?vod_id={url:raw}&user_id="
-    },
-    {
-      "op": "regex",
-      "pattern": "\"info\"\\s*:\\s*(\\{[\\s\\S]*\\})\\s*\\}\\s*$",
-      "group": 1
-    },
-    {
-      "op": "template",
-      "value": "[{url:raw}]"
-    },
-    {
-      "op": "maccmsApiEpisodes",
-      "listPath": "",
-      "directOnly": true
-    }
-  ],
-  "useWebview": true,
-  "play": [
-    {
-      "op": "videoUrl",
-      "proxyMedia": true
-    }
-  ]
+  {
+   "op": "jsonSeries",
+   "listPath": "info.rows",
+   "idKey": "vod_id",
+   "nameKey": "vod_name",
+   "imageKey": "vod_pic",
+   "descKey": "vod_remarks",
+   "detailUrlTemplate": "/video/{id}"
+  }
+ ],
+ "detail": [
+  {
+   "op": "template",
+   "value": "{seriesId}"
+  },
+  {
+   "op": "regex",
+   "pattern": "/video/(\\d+)",
+   "group": 1
+  },
+  {
+   "op": "setVar",
+   "name": "vodId",
+   "value": "{url:raw}"
+  },
+  {
+   "op": "fetch",
+   "url": "https://m3u8.girigirilove.com/api.php/Vod/get_detail?vod_id={vodId}",
+   "headers": {
+    "Referer": "https://ani.girigirilove.com/"
+   }
+  },
+  {
+   "op": "maccmsApiEpisodes",
+   "listPath": "info",
+   "preferHls": true
+  }
+ ],
+ "useWebview": false,
+ "play": [
+  {
+   "op": "videoUrl"
+  }
+ ],
+ "home": [
+  {
+   "op": "fetch",
+   "url": "https://m3u8.girigirilove.com/api.php/Vod/get_list?offset=0&limit=30",
+   "headers": {
+    "Referer": "https://ani.girigirilove.com/"
+   }
+  },
+  {
+   "op": "jsonSeries",
+   "listPath": "info.rows",
+   "idKey": "vod_id",
+   "nameKey": "vod_name",
+   "imageKey": "vod_pic",
+   "descKey": "vod_remarks",
+   "detailUrlTemplate": "/video/{id}"
+  }
+ ],
+ "categories": [
+  {
+   "id": "2",
+   "name": "愛動画"
+  },
+  {
+   "id": "21",
+   "name": "愛劇場"
+  }
+ ],
+ "category": [
+  {
+   "op": "fetch",
+   "url": "https://m3u8.girigirilove.com/api.php/Vod/get_list?offset=0&limit=30&type_id={categoryId}",
+   "headers": {
+    "Referer": "https://ani.girigirilove.com/"
+   }
+  },
+  {
+   "op": "jsonSeries",
+   "listPath": "info.rows",
+   "idKey": "vod_id",
+   "nameKey": "vod_name",
+   "imageKey": "vod_pic",
+   "descKey": "vod_remarks",
+   "detailUrlTemplate": "/video/{id}"
+  }
+ ]
 }

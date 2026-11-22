@@ -11,6 +11,14 @@ import 'package:baka/widgets/dialog/update_dialog.dart';
 
 const _kAnnouncementContentKey = 'last_announcement_content';
 
+/// 定制版：完全不请求官方版本接口。
+///
+/// 官方版本域名 version.anibaka.com 在当前网络下常被解析到无效地址，每次进
+/// 首页会白等约 20 秒并弹出「网络连接失败」。置为 false 可恢复官方检查，但
+/// 官方安装包会整体覆盖定制版，所以这里默认关闭。
+const bool disableOfficialUpdateCheck = true;
+
+
 bool _isVersionNewer(String remote, String local) {
   if (remote == local) return false;
   final latest = remote.split('.');
@@ -27,10 +35,21 @@ abstract final class VersionService {
   static Future<void>? _checkTask;
 
   static Future<UpdateInfo> checkUpdateInfo() async {
+    final localVersion = Instances.appVersion;
+    // 定制版：官方更新检查已禁用，直接返回「无更新」，不再发起网络请求。
+    // 公告获取（getPostDetail）在 _checkAndShowUpdate 中照常执行，不受影响。
+    if (disableOfficialUpdateCheck) {
+      return UpdateInfo(
+        hasUpdate: false,
+        forceUpdate: false,
+        changelog: '',
+        downloadUrl: '',
+        latestVersion: localVersion,
+      );
+    }
     final appInfo = await apiTransport.getJson<Map<String, dynamic>>(
       'https://version.anibaka.com/',
     );
-    final localVersion = Instances.appVersion;
 
     final appUpdate = appInfo['app_update'] as Map<String, dynamic>;
     final platforms = appUpdate['platforms'] as Map<String, dynamic>;
@@ -79,8 +98,8 @@ abstract final class VersionService {
       Log.w('Update', '公告获取失败: $e');
     }
 
-    final hasUpdate = updateInfo?.hasUpdate ?? false;
-    final forceUpdate = updateInfo?.forceUpdate ?? false;
+    final hasUpdate = false;
+    final forceUpdate = false;
     final announcementId = 'announcement_$host';
     if (contentVisibility.isDismissed(announcementId, announcementContent)) {
       announcementContent = '';

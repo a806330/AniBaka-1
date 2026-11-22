@@ -1,74 +1,87 @@
 {
-  "format": "anx-rule/2",
-  "id": "tvtfun",
-  "name": "TvTFun",
-  "baseUrl": "https://www.tvtfun.net",
-  "iconUrl": "https://www.tvtfun.net/favicon-32x32.png",
-  "description": "TvTFun 动漫视频源。",
-  "directConnection": true,
-  "headers": {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
-    "Referer": "https://www.tvtfun.net/"
+ "format": "anx-rule/2",
+ "id": "tvtfun",
+ "name": "TvTFun",
+ "baseUrl": "https://www.tvtfun.net",
+ "iconUrl": "https://www.tvtfun.net/favicon-32x32.png",
+ "description": "TvTFun 动漫视频源。",
+ "directConnection": true,
+ "headers": {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+  "Referer": "https://www.tvtfun.net/"
+ },
+ "search": [
+  {
+   "op": "fetch",
+   "url": "/api/client/anime?keyword={keyword}&page=1&pageSize=100"
   },
-  "search": [
-    {
-      "op": "fetch",
-      "url": "/api/client/anime?keyword={keyword}&page=1&pageSize=100"
-    },
-    {
-      "op": "jsonSeries",
-      "listPath": "data.items",
-      "idKey": "slug",
-      "nameKey": "name",
-      "imageKey": "coverUrl",
-      "descKey": "summary",
-      "detailUrlTemplate": "/anime/{id}"
-    }
-  ],
-  "detail": [
-    {
-      "op": "regex",
-      "pattern": "/anime/([^/?#]+)",
-      "group": 1
-    },
-    {
-      "op": "fetch",
-      "url": "/api/client/anime/{url:raw}"
-    },
-    {
-      "op": "jsonEpisodes",
-      "sourcesPath": "data.seasons",
-      "episodesKey": "episodes",
-      "sourceNameKey": "name",
-      "episodeNameKey": "title",
-      "episodeIdTemplate": "{id:raw}"
-    }
-  ],
-  "play": [
-    {
-      "op": "fetch",
-      "url": "/api/client/anime/episodes/{episodeId:raw}/playback"
-    },
-    {
-      "op": "json",
-      "path": "data.items[0].id"
-    },
-    {
-      "op": "fetch",
-      "url": "/api/site-auth/playback-resolve",
-      "method": "POST",
-      "contentType": "application/json",
-      "headers": {
-        "Origin": "https://www.tvtfun.net"
-      },
-      "body": {
-        "episodeId": "{episodeId:raw}",
-        "sourceId": "{url:raw}"
-      }
-    },
-    {
-      "op": "json",
-      "path": "data.playback.url"
-    }
-  ]
+  {
+   "op": "jsonSeries",
+   "listPath": "data.items",
+   "idKey": "slug",
+   "nameKey": "name",
+   "imageKey": "coverUrl",
+   "descKey": "summary",
+   "detailUrlTemplate": "/anime/{id}"
+  }
+ ],
+ "detail": [
+  {
+   "op": "regex",
+   "pattern": "/anime/([^/?#]+)",
+   "group": 1
+  },
+  {
+   "op": "fetch",
+   "url": "/api/client/anime/{url:raw}"
+  },
+  {
+   "op": "jsonEpisodes",
+   "sourcesPath": "data.seasons",
+   "episodesKey": "episodes",
+   "sourceNameKey": "name",
+   "episodeNameKey": "title",
+   "episodeIdTemplate": "{id:raw}"
+  }
+ ],
+ "play": [
+  {
+   "op": "fetch",
+   "url": "/api/client/anime/episodes/{episodeId:raw}/playback"
+  },
+  {
+   "op": "json",
+   "path": "data.items[0].id"
+  },
+  {
+   "op": "fetch",
+   "url": "/api/site-auth/playback-resolve",
+   "method": "POST",
+   "contentType": "application/json",
+   "headers": {
+    "Origin": "https://www.tvtfun.net"
+   },
+   "body": {
+    "episodeId": "{episodeId:raw}",
+    "sourceId": "{url:raw}"
+   }
+  },
+  {
+   "op": "json",
+   "path": "data.playback.url"
+  }
+ ],
+ "home": [
+  {
+   "op": "fetch",
+   "url": "/"
+  },
+  {
+   "op": "searchList",
+   "selectors": [
+    "a.legacy-video-card"
+   ],
+   "detailPattern": "/anime/"
+  }
+ ]
 }

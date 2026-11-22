@@ -1,111 +1,138 @@
 {
-  "format": "anx-rule/2",
-  "id": "xifanacg",
-  "name": "Xifanacg Next",
-  "baseUrl": "https://next.xifanacg.com",
-  "iconUrl": "https://next.xifanacg.com/favicon.ico",
-  "description": "稀饭动漫 Next 视频源，源网址 https://next.xifanacg.com/",
-  "headers": {
-    "Referer": "https://next.xifanacg.com/"
+ "format": "anx-rule/2",
+ "id": "xifanacg",
+ "name": "Xifanacg Next",
+ "baseUrl": "https://next.xifanacg.com",
+ "iconUrl": "https://next.xifanacg.com/favicon.ico",
+ "description": "稀饭动漫 Next 视频源，源网址 https://next.xifanacg.com/",
+ "headers": {
+  "Referer": "https://next.xifanacg.com/"
+ },
+ "search": [
+  {
+   "op": "fetch",
+   "url": "https://api.xifanacg.com/rest/v1/rpc/search_animes",
+   "method": "POST",
+   "contentType": "application/json",
+   "headers": {
+    "Accept": "application/json",
+    "apikey": "sb_publishable_OBIVAWACIX6lPXrO98_z24_HcsmalkA",
+    "Authorization": "Bearer sb_publishable_OBIVAWACIX6lPXrO98_z24_HcsmalkA",
+    "Origin": "https://next.xifanacg.com"
+   },
+   "body": {
+    "search_term": "{keyword:raw}"
+   }
   },
-  "search": [
-    {
+  {
+   "op": "jsonSeries",
+   "idKey": "id",
+   "nameKey": "title",
+   "imageKey": "cover_url",
+   "descKey": "description",
+   "detailUrlTemplate": "/anime/{id}"
+  }
+ ],
+ "detail": [
+  {
+   "op": "follow"
+  },
+  {
+   "op": "episodes",
+   "roadsXPath": "//section",
+   "itemsXPath": ".//a[contains(@href, \"/play/\")]"
+  }
+ ],
+ "play": [
+  {
+   "op": "regex",
+   "pattern": "/play/(\\d+)",
+   "group": 1
+  },
+  {
+   "op": "setVar",
+   "name": "xifanEpisodeId",
+   "value": "{url:raw}"
+  },
+  {
+   "op": "first",
+   "branches": [
+    [
+     {
       "op": "fetch",
-      "url": "https://api.xifanacg.com/rest/v1/rpc/search_animes",
+      "url": "https://api.xifanacg.com/functions/v1/issue-web-playback",
       "method": "POST",
       "contentType": "application/json",
       "headers": {
-        "Accept": "application/json",
-        "apikey": "sb_publishable_OBIVAWACIX6lPXrO98_z24_HcsmalkA",
-        "Authorization": "Bearer sb_publishable_OBIVAWACIX6lPXrO98_z24_HcsmalkA",
-        "Origin": "https://next.xifanacg.com"
+       "Accept": "application/json",
+       "apikey": "sb_publishable_OBIVAWACIX6lPXrO98_z24_HcsmalkA",
+       "Authorization": "Bearer sb_publishable_OBIVAWACIX6lPXrO98_z24_HcsmalkA",
+       "Origin": "https://next.xifanacg.com"
       },
-      "body": {
-        "search_term": "{keyword:raw}"
-      }
-    },
-    {
-      "op": "jsonSeries",
-      "idKey": "id",
-      "nameKey": "title",
-      "imageKey": "cover_url",
-      "descKey": "description",
-      "detailUrlTemplate": "/anime/{id}"
-    }
-  ],
-  "detail": [
-    {
-      "op": "follow"
-    },
-    {
-      "op": "episodes",
-      "roadsXPath": "//section",
-      "itemsXPath": ".//a[contains(@href, \"/play/\")]"
-    }
-  ],
-  "play": [
-    {
-      "op": "regex",
-      "pattern": "/play/(\\d+)",
-      "group": 1
-    },
-    {
-      "op": "setVar",
-      "name": "xifanEpisodeId",
-      "value": "{url:raw}"
-    },
-    {
-      "op": "first",
-      "branches": [
-        [
-          {
-            "op": "fetch",
-            "url": "https://api.xifanacg.com/functions/v1/issue-web-playback",
-            "method": "POST",
-            "contentType": "application/json",
-            "headers": {
-              "Accept": "application/json",
-              "apikey": "sb_publishable_OBIVAWACIX6lPXrO98_z24_HcsmalkA",
-              "Authorization": "Bearer sb_publishable_OBIVAWACIX6lPXrO98_z24_HcsmalkA",
-              "Origin": "https://next.xifanacg.com"
-            },
-            "body": "{\"action\":\"hls\",\"episode_id\":{xifanEpisodeId:raw}}"
-          },
-          {
-            "op": "json",
-            "path": "url"
-          },
-          {
-            "op": "videoUrl"
-          }
-        ],
-        [
-          {
-            "op": "fetch",
-            "url": "https://api.xifanacg.com/functions/v1/issue-web-playback",
-            "method": "POST",
-            "contentType": "application/json",
-            "headers": {
-              "Accept": "application/json",
-              "apikey": "sb_publishable_OBIVAWACIX6lPXrO98_z24_HcsmalkA",
-              "Authorization": "Bearer sb_publishable_OBIVAWACIX6lPXrO98_z24_HcsmalkA",
-              "Origin": "https://next.xifanacg.com"
-            },
-            "body": "{\"action\":\"fallback\",\"episode_id\":{xifanEpisodeId:raw}}"
-          },
-          {
-            "op": "json",
-            "path": "url"
-          },
-          {
-            "op": "videoUrl"
-          }
-        ]
-      ]
-    },
-    {
-      "op": "setMediaHeaders",
-      "remove": ["Referer"]
-    }
-  ]
+      "body": "{\"action\":\"hls\",\"episode_id\":{xifanEpisodeId:raw}}"
+     },
+     {
+      "op": "json",
+      "path": "url"
+     },
+     {
+      "op": "videoUrl"
+     }
+    ],
+    [
+     {
+      "op": "fetch",
+      "url": "https://api.xifanacg.com/functions/v1/issue-web-playback",
+      "method": "POST",
+      "contentType": "application/json",
+      "headers": {
+       "Accept": "application/json",
+       "apikey": "sb_publishable_OBIVAWACIX6lPXrO98_z24_HcsmalkA",
+       "Authorization": "Bearer sb_publishable_OBIVAWACIX6lPXrO98_z24_HcsmalkA",
+       "Origin": "https://next.xifanacg.com"
+      },
+      "body": "{\"action\":\"fallback\",\"episode_id\":{xifanEpisodeId:raw}}"
+     },
+     {
+      "op": "json",
+      "path": "url"
+     },
+     {
+      "op": "videoUrl"
+     }
+    ]
+   ]
+  },
+  {
+   "op": "setMediaHeaders",
+   "remove": [
+    "Referer"
+   ]
+  }
+ ],
+ "home": [
+  {
+   "op": "fetch",
+   "url": "https://api.xifanacg.com/rest/v1/rpc/search_animes",
+   "method": "POST",
+   "contentType": "application/json",
+   "headers": {
+    "Accept": "application/json",
+    "apikey": "sb_publishable_OBIVAWACIX6lPXrO98_z24_HcsmalkA",
+    "Authorization": "Bearer sb_publishable_OBIVAWACIX6lPXrO98_z24_HcsmalkA",
+    "Origin": "https://next.xifanacg.com"
+   },
+   "body": {
+    "search_term": ""
+   }
+  },
+  {
+   "op": "jsonSeries",
+   "idKey": "id",
+   "nameKey": "title",
+   "imageKey": "cover_url",
+   "descKey": "description",
+   "detailUrlTemplate": "/anime/{id}"
+  }
+ ]
 }

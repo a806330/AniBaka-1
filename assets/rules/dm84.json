@@ -1,123 +1,145 @@
 {
-  "format": "anx-rule/2",
-  "id": "dm84",
-  "name": "DM84",
-  "baseUrl": "https://dmbus.cc",
-  "iconUrl": "https://dmbus.cc/favicon.ico",
-  "description": "DM84 动漫视频源。",
-  "headers": {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
-    "Accept": "*/*",
-    "Referer": "https://dmbus.cc/"
+ "format": "anx-rule/2",
+ "id": "dm84",
+ "name": "DM84",
+ "baseUrl": "https://dmbus.cc",
+ "iconUrl": "https://dmbus.cc/favicon.ico",
+ "description": "DM84 动漫视频源。",
+ "headers": {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+  "Accept": "*/*",
+  "Referer": "https://dmbus.cc/"
+ },
+ "search": [
+  {
+   "op": "fetch",
+   "url": "/s----------.html?wd={keyword}"
   },
-  "search": [
-    {
-      "op": "fetch",
-      "url": "/s----------.html?wd={keyword}"
-    },
-    {
-      "op": "searchList",
-      "selectors": [
-        "div.item"
-      ],
-      "linkSelector": "a.title",
-      "titleSelector": "a.title",
-      "imageSelector": "a.cover",
-      "imageAttr": "data-bg"
-    }
-  ],
-  "detail": [
-    {
-      "op": "follow"
-    },
-    {
-      "op": "episodes",
-      "listSelectors": [
-        "ul.play_list"
-      ],
-      "tabSelectors": [
-        "ul.tab_control.play_from > li"
-      ],
-      "reverseEpisodes": true
-    }
-  ],
-  "play": [
-    {
-      "op": "follow"
-    },
-    {
-      "op": "select",
-      "css": "iframe[src*=\"hhjx.hhplayer.com\"]",
-      "attr": "src"
-    },
-    {
-      "op": "replace",
-      "pattern": "/index.php?",
-      "replacement": "/?"
-    },
-    {
-      "op": "follow"
-    },
-    {
-      "op": "regex",
-      "pattern": "window\\.__HHJX_BOOTSTRAP__\\s*=\\s*(\\{[^;]+\\})\\s*;",
-      "group": 1
-    },
-    {
-      "op": "setVar",
-      "name": "hhBootstrap",
-      "value": "{url:raw}"
-    },
-    {
-      "op": "regex",
-      "pattern": "\"t\"\\s*:\\s*(\\d+)",
-      "group": 1
-    },
-    {
-      "op": "setVar",
-      "name": "hhTimestamp",
-      "value": "{url:raw}"
-    },
-    {
-      "op": "template",
-      "value": "{hhBootstrap:raw}"
-    },
-    {
-      "op": "json",
-      "path": "url"
-    },
-    {
-      "op": "setVar",
-      "name": "hhUrl",
-      "value": "{url:raw}"
-    },
-    {
-      "op": "template",
-      "value": "{hhBootstrap:raw}"
-    },
-    {
-      "op": "json",
-      "path": "key"
-    },
-    {
-      "op": "setVar",
-      "name": "hhKey",
-      "value": "{url:raw}"
-    },
-    {
-      "op": "fetch",
-      "url": "https://hhjx.hhplayer.com/api/parse",
-      "method": "POST",
-      "contentType": "application/json",
-      "body": "{\"url\":\"{hhUrl:raw}\",\"t\":{hhTimestamp:raw},\"key\":\"{hhKey:raw}\",\"client_fallback\":false}",
-      "headers": {
-        "Accept": "application/json, text/plain, */*",
-        "Origin": "https://hhjx.hhplayer.com"
-      }
-    },
-    {
-      "op": "json",
-      "path": "url"
-    }
-  ]
+  {
+   "op": "searchList",
+   "selectors": [
+    "div.item"
+   ],
+   "linkSelector": "a.title",
+   "titleSelector": "a.title",
+   "imageSelector": "a.cover",
+   "imageAttr": "data-bg"
+  }
+ ],
+ "detail": [
+  {
+   "op": "follow"
+  },
+  {
+   "op": "episodes",
+   "listSelectors": [
+    "ul.play_list"
+   ],
+   "tabSelectors": [
+    "ul.tab_control.play_from > li"
+   ],
+   "reverseEpisodes": true
+  }
+ ],
+ "play": [
+  {
+   "op": "follow"
+  },
+  {
+   "op": "select",
+   "css": "iframe[src*=\"hhjx.hhplayer.com\"]",
+   "attr": "src"
+  },
+  {
+   "op": "replace",
+   "pattern": "/index.php?",
+   "replacement": "/?"
+  },
+  {
+   "op": "follow"
+  },
+  {
+   "op": "regex",
+   "pattern": "window\\.__HHJX_BOOTSTRAP__\\s*=\\s*(\\{[^;]+\\})\\s*;",
+   "group": 1
+  },
+  {
+   "op": "setVar",
+   "name": "hhBootstrap",
+   "value": "{url:raw}"
+  },
+  {
+   "op": "regex",
+   "pattern": "\"t\"\\s*:\\s*(\\d+)",
+   "group": 1
+  },
+  {
+   "op": "setVar",
+   "name": "hhTimestamp",
+   "value": "{url:raw}"
+  },
+  {
+   "op": "template",
+   "value": "{hhBootstrap:raw}"
+  },
+  {
+   "op": "json",
+   "path": "url"
+  },
+  {
+   "op": "setVar",
+   "name": "hhUrl",
+   "value": "{url:raw}"
+  },
+  {
+   "op": "template",
+   "value": "{hhBootstrap:raw}"
+  },
+  {
+   "op": "json",
+   "path": "key"
+  },
+  {
+   "op": "setVar",
+   "name": "hhKey",
+   "value": "{url:raw}"
+  },
+  {
+   "op": "fetch",
+   "url": "https://hhjx.hhplayer.com/api/parse",
+   "method": "POST",
+   "contentType": "application/json",
+   "body": "{\"url\":\"{hhUrl:raw}\",\"t\":{hhTimestamp:raw},\"key\":\"{hhKey:raw}\",\"client_fallback\":false}",
+   "headers": {
+    "Accept": "application/json, text/plain, */*",
+    "Origin": "https://hhjx.hhplayer.com"
+   }
+  },
+  {
+   "op": "json",
+   "path": "url"
+  }
+ ],
+ "home": [
+  {
+   "op": "fetch",
+   "url": "/"
+  },
+  {
+   "op": "searchList",
+   "selectors": [
+    ".search-list .item",
+    ".video-list li",
+    ".drama-module li",
+    ".module-items .module-item",
+    ".module-search-item",
+    ".stui-vodlist__box",
+    ".list-item",
+    "ul.items li",
+    "div.item",
+    "li.video-item"
+   ],
+   "detailPattern": "/v/"
+  }
+ ]
 }

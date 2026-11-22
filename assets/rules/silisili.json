@@ -1,147 +1,199 @@
 {
-  "format": "anx-rule/2",
-  "id": "silisili",
-  "name": "嘶哩嘶哩",
-  "baseUrl": "https://www.silisilifun.com",
-  "iconUrl": "https://www.silisilifun.com/favicon.ico?20190911",
-  "description": "嘶哩嘶哩动漫源。保留站点访问会话 Cookie，优先通过本站播放接口解密直链，WebView 作为后备。",
-  "headers": {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-    "Referer": "https://www.silisilifun.com/",
-    "Cookie": "silisili=on"
+ "format": "anx-rule/2",
+ "id": "silisili",
+ "name": "嘶哩嘶哩",
+ "baseUrl": "https://www.silisilifun.com",
+ "iconUrl": "https://www.silisilifun.com/favicon.ico?20190911",
+ "description": "嘶哩嘶哩动漫源。保留站点访问会话 Cookie，优先通过本站播放接口解密直链，WebView 作为后备。",
+ "headers": {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+  "Referer": "https://www.silisilifun.com/",
+  "Cookie": "silisili=on"
+ },
+ "search": [
+  {
+   "op": "fetch",
+   "url": "/vodsearch/?wd={keyword}"
   },
-  "search": [
-    {
+  {
+   "op": "searchList",
+   "selectors": [
+    "#content article.post-list"
+   ],
+   "linkSelector": ".entry-title > a",
+   "titleSelector": ".entry-title > a",
+   "imageSelector": ".search-image img",
+   "imageAttr": "srcset"
+  }
+ ],
+ "detail": [
+  {
+   "op": "follow"
+  },
+  {
+   "op": "episodes",
+   "listSelectors": [
+    ".play-pannel-list ul.stui-content__playlist"
+   ],
+   "tabSelectors": [
+    ".play-pannel_hd .widget-title"
+   ]
+  }
+ ],
+ "play": [
+  {
+   "op": "setMediaHeaders",
+   "headers": {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+   }
+  },
+  {
+   "op": "first",
+   "branches": [
+    [
+     {
       "op": "fetch",
-      "url": "/vodsearch/?wd={keyword}"
-    },
-    {
-      "op": "searchList",
-      "selectors": [
-        "#content article.post-list"
-      ],
-      "linkSelector": ".entry-title > a",
-      "titleSelector": ".entry-title > a",
-      "imageSelector": ".search-image img",
-      "imageAttr": "srcset"
-    }
-  ],
-  "detail": [
-    {
-      "op": "follow"
-    },
-    {
-      "op": "episodes",
-      "listSelectors": [
-        ".play-pannel-list ul.stui-content__playlist"
-      ],
-      "tabSelectors": [
-        ".play-pannel_hd .widget-title"
-      ]
-    }
-  ],
-  "play": [
-    {
-      "op": "setMediaHeaders",
+      "url": "{episodeId:raw}",
+      "method": "POST",
+      "contentType": "form",
       "headers": {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+       "X-Requested-With": "XMLHttpRequest",
+       "Cookie": "silisili=on; c_player=1"
+      },
+      "body": {
+       "player": "sili"
       }
-    },
-    {
-      "op": "first",
-      "branches": [
-        [
-          {
-            "op": "fetch",
-            "url": "{episodeId:raw}",
-            "method": "POST",
-            "contentType": "form",
-            "headers": {
-              "X-Requested-With": "XMLHttpRequest",
-              "Cookie": "silisili=on; c_player=1"
-            },
-            "body": {
-              "player": "sili"
-            }
-          },
-          {
-            "op": "setVar",
-            "name": "siliPayload",
-            "value": "{url:raw}"
-          },
-          {
-            "op": "regex",
-            "pattern": "^(.{9})",
-            "group": 1
-          },
-          {
-            "op": "crypto",
-            "algo": "md5"
-          },
-          {
-            "op": "setVar",
-            "name": "siliDigest",
-            "value": "{url:raw}"
-          },
-          {
-            "op": "regex",
-            "pattern": "^.{16}(.{16})$",
-            "group": 1
-          },
-          {
-            "op": "setVar",
-            "name": "siliKey",
-            "value": "{url:raw}"
-          },
-          {
-            "op": "template",
-            "value": "{siliDigest:raw}"
-          },
-          {
-            "op": "regex",
-            "pattern": "^(.{16})",
-            "group": 1
-          },
-          {
-            "op": "setVar",
-            "name": "siliIv",
-            "value": "{url:raw}"
-          },
-          {
-            "op": "template",
-            "value": "{siliPayload:raw}"
-          },
-          {
-            "op": "regex",
-            "pattern": "^.{9}([\\s\\S]+)$",
-            "group": 1
-          },
-          {
-            "op": "crypto",
-            "algo": "aes-cbc",
-            "mode": "decrypt",
-            "key": "{siliKey:raw}",
-            "iv": "{siliIv:raw}"
-          },
-          {
-            "op": "json",
-            "path": "url"
-          },
-          {
-            "op": "regex",
-            "pattern": "^(https?://\\S+\\.(?:m3u8|mp4|mkv|flv)(?:[?#]\\S*)?)$",
-            "group": 1
-          }
-        ],
-        [
-          {
-            "op": "sniff",
-            "goal": "video",
-            "url": "{episodeId:raw}"
-          }
-        ]
-      ]
-    }
-  ],
-  "useWebview": true
+     },
+     {
+      "op": "setVar",
+      "name": "siliPayload",
+      "value": "{url:raw}"
+     },
+     {
+      "op": "regex",
+      "pattern": "^(.{9})",
+      "group": 1
+     },
+     {
+      "op": "crypto",
+      "algo": "md5"
+     },
+     {
+      "op": "setVar",
+      "name": "siliDigest",
+      "value": "{url:raw}"
+     },
+     {
+      "op": "regex",
+      "pattern": "^.{16}(.{16})$",
+      "group": 1
+     },
+     {
+      "op": "setVar",
+      "name": "siliKey",
+      "value": "{url:raw}"
+     },
+     {
+      "op": "template",
+      "value": "{siliDigest:raw}"
+     },
+     {
+      "op": "regex",
+      "pattern": "^(.{16})",
+      "group": 1
+     },
+     {
+      "op": "setVar",
+      "name": "siliIv",
+      "value": "{url:raw}"
+     },
+     {
+      "op": "template",
+      "value": "{siliPayload:raw}"
+     },
+     {
+      "op": "regex",
+      "pattern": "^.{9}([\\s\\S]+)$",
+      "group": 1
+     },
+     {
+      "op": "crypto",
+      "algo": "aes-cbc",
+      "mode": "decrypt",
+      "key": "{siliKey:raw}",
+      "iv": "{siliIv:raw}"
+     },
+     {
+      "op": "json",
+      "path": "url"
+     },
+     {
+      "op": "regex",
+      "pattern": "^(https?://\\S+\\.(?:m3u8|mp4|mkv|flv)(?:[?#]\\S*)?)$",
+      "group": 1
+     }
+    ],
+    [
+     {
+      "op": "sniff",
+      "goal": "video",
+      "url": "{episodeId:raw}"
+     }
+    ]
+   ]
+  }
+ ],
+ "useWebview": true,
+ "home": [
+  {
+   "op": "fetch",
+   "url": "https://www.silisilifun.com/api.php/provide/vod/?ac=detail&pg=1"
+  },
+  {
+   "op": "jsonSeries",
+   "listPath": "list",
+   "idKey": "vod_id",
+   "nameKey": "vod_name",
+   "imageKey": "vod_pic",
+   "descKey": "vod_remarks",
+   "detailUrlTemplate": "/voddetail/{id}.html"
+  }
+ ],
+ "categories": [
+  {
+   "id": "1",
+   "name": "新番日漫"
+  },
+  {
+   "id": "2",
+   "name": "新番国漫"
+  },
+  {
+   "id": "3",
+   "name": "动漫番剧"
+  },
+  {
+   "id": "4",
+   "name": "剧场动漫"
+  },
+  {
+   "id": "24",
+   "name": "4K专区"
+  }
+ ],
+ "category": [
+  {
+   "op": "fetch",
+   "url": "https://www.silisilifun.com/api.php/provide/vod/?ac=detail&pg=1&t={categoryId}"
+  },
+  {
+   "op": "jsonSeries",
+   "listPath": "list",
+   "idKey": "vod_id",
+   "nameKey": "vod_name",
+   "imageKey": "vod_pic",
+   "descKey": "vod_remarks",
+   "detailUrlTemplate": "/voddetail/{id}.html"
+  }
+ ]
 }

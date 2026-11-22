@@ -1,228 +1,244 @@
 {
-  "format": "anx-rule/2",
-  "id": "akianime",
-  "name": "萌番 AkiAnime",
-  "baseUrl": "https://www.akianime.com/",
-  "iconUrl": "https://www.akianime.com/template/dsn2/static/img/ico.png",
-  "description": "萌番 AkiAnime 动漫源，源网址 https://www.akianime.com/",
-  "pipeline": {
-    "headers": {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "Referer": "https://www.akianime.com/"
-    },
-    "search": [
-      {
-        "op": "fetch",
-        "url": "/bgmsearch/{keyword}-------------.html"
-      },
-      {
-        "op": "searchList",
-        "selectors": [
-          ".vod-detail.search-list"
-        ],
-        "linkSelector": ".detail-info > a[href^=\"/bgmdetail/\"]",
-        "titleSelector": "h3.slide-info-title",
-        "imageSelector": ".detail-pic img",
-        "imageAttr": "data-src",
-        "keywordMatch": true
-      }
-    ],
-    "detail": [
-      {
-        "op": "follow",
-        "headers": {
-          "Referer": "https://www.akianime.com/"
-        }
-      },
-      {
-        "op": "episodes",
-        "listSelectors": [
-          "ul.anthology-list-play"
-        ],
-        "tabSelectors": [
-          ".anthology-tab a.swiper-slide"
-        ],
-        "tabAttr": "ownText"
-      }
-    ],
-    "play": [
-      {
-        "op": "follow",
-        "headers": {
-          "Referer": "https://www.akianime.com/"
-        }
-      },
-      {
-        "op": "setVar",
-        "name": "playHtml",
-        "value": "{url:raw}"
-      },
-      {
-        "op": "template",
-        "value": "{playHtml:raw}"
-      },
-      {
-        "op": "regex",
-        "pattern": "\"from\"\\s*:\\s*\"([^\"]+)\"",
-        "group": 1
-      },
-      {
-        "op": "setVar",
-        "name": "playerFrom",
-        "value": "{url:raw}"
-      },
-      {
-        "op": "template",
-        "value": "{playHtml:raw}"
-      },
-      {
-        "op": "playerAaaa",
-        "var": "player_aaaa",
-        "key": "url"
-      },
-      {
-        "op": "setVar",
-        "name": "playerUrl",
-        "value": "{url:raw}"
-      },
-      {
-        "op": "first",
-        "branches": [
-          [
-            {
-              "op": "template",
-              "value": "{playerUrl:raw}"
-            },
-            {
-              "op": "regex",
-              "pattern": "(https?://[^\"'\\s]+\\.(?:m3u8|mp4|flv)[^\"'\\s]*)",
-              "group": 1
-            },
-            {
-              "op": "videoUrl"
-            }
-          ],
-          [
-            {
-              "op": "fetch",
-              "url": "/static/js/playerconfig.js",
-              "headers": {
-                "Referer": "https://www.akianime.com/"
-              }
-            },
-            {
-              "op": "regex",
-              "pattern": "\"{playerFrom:raw}\"\\s*:\\s*\\{[\\s\\S]*?\"parse\"\\s*:\\s*\"([^\"]*)\"",
-              "group": 1
-            },
-            {
-              "op": "replace",
-              "pattern": "\\/",
-              "replacement": "/"
-            },
-            {
-              "op": "setVar",
-              "name": "parserBase",
-              "value": "{url:raw}"
-            },
-            {
-              "op": "template",
-              "value": "{parserBase:raw}"
-            },
-            {
-              "op": "regex",
-              "pattern": "(https?://[^/]+)",
-              "group": 1
-            },
-            {
-              "op": "setVar",
-              "name": "parserHost",
-              "value": "{url:raw}"
-            },
-            {
-              "op": "fetch",
-              "url": "{parserBase:raw}{playerUrl:raw}",
-              "headers": {
-                "Referer": "https://www.akianime.com/"
-              }
-            },
-            {
-              "op": "setVar",
-              "name": "parserHtml",
-              "value": "{url:raw}"
-            },
-            {
-              "op": "template",
-              "value": "{parserHtml:raw}"
-            },
-            {
-              "op": "regex",
-              "pattern": "\"time\"\\s*:\\s*\"([^\"]+)\"",
-              "group": 1
-            },
-            {
-              "op": "setVar",
-              "name": "parserTime",
-              "value": "{url:raw}"
-            },
-            {
-              "op": "template",
-              "value": "{parserHtml:raw}"
-            },
-            {
-              "op": "regex",
-              "pattern": "\"key\"\\s*:\\s*\"([^\"]+)\"",
-              "group": 1
-            },
-            {
-              "op": "setVar",
-              "name": "parserKey",
-              "value": "{url:raw}"
-            },
-            {
-              "op": "fetch",
-              "url": "{parserHost:raw}/api_config.php",
-              "method": "POST",
-              "contentType": "application/x-www-form-urlencoded",
-              "headers": {
-                "X-Requested-With": "XMLHttpRequest",
-                "Origin": "{parserHost:raw}",
-                "Referer": "{parserBase:raw}"
-              },
-              "body": "url={playerUrl:raw}&time={parserTime:raw}&key={parserKey:raw}"
-            },
-            {
-              "op": "json",
-              "path": "url"
-            },
-            {
-              "op": "videoUrl"
-            }
-          ],
-          [
-            {
-              "op": "sniff",
-              "goal": "video",
-              "url": "{episodeId:raw}",
-              "resolveMediaRedirects": true,
-              "timeoutMs": 60000,
-              "settleMs": 2000
-            }
-          ]
-        ]
-      },
-      {
-        "op": "setMediaHeaders",
-        "remove": [
-          "Referer"
-        ]
-      }
-    ],
-    "useWebview": true,
-    "mediaValidationTimeoutMs": 30000
+ "format": "anx-rule/2",
+ "id": "akianime",
+ "name": "萌番 AkiAnime",
+ "baseUrl": "https://www.akianime.com/",
+ "iconUrl": "https://www.akianime.com/template/dsn2/static/img/ico.png",
+ "description": "萌番 AkiAnime 动漫源，源网址 https://www.akianime.com/",
+ "pipeline": {
+  "headers": {
+   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+   "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+   "Referer": "https://www.akianime.com/"
   },
-  "enabled": true,
-  "createdAt": "2026-09-10T14:26:51.355801",
-  "updatedAt": "2026-09-28T10:30:00.000000"
+  "search": [
+   {
+    "op": "fetch",
+    "url": "/bgmsearch/{keyword}-------------.html"
+   },
+   {
+    "op": "searchList",
+    "selectors": [
+     ".vod-detail.search-list"
+    ],
+    "linkSelector": ".detail-info > a[href^=\"/bgmdetail/\"]",
+    "titleSelector": "h3.slide-info-title",
+    "imageSelector": ".detail-pic img",
+    "imageAttr": "data-src",
+    "keywordMatch": true
+   }
+  ],
+  "detail": [
+   {
+    "op": "follow",
+    "headers": {
+     "Referer": "https://www.akianime.com/"
+    }
+   },
+   {
+    "op": "episodes",
+    "listSelectors": [
+     "ul.anthology-list-play"
+    ],
+    "tabSelectors": [
+     ".anthology-tab a.swiper-slide"
+    ],
+    "tabAttr": "ownText"
+   }
+  ],
+  "play": [
+   {
+    "op": "follow",
+    "headers": {
+     "Referer": "https://www.akianime.com/"
+    }
+   },
+   {
+    "op": "setVar",
+    "name": "playHtml",
+    "value": "{url:raw}"
+   },
+   {
+    "op": "template",
+    "value": "{playHtml:raw}"
+   },
+   {
+    "op": "regex",
+    "pattern": "\"from\"\\s*:\\s*\"([^\"]+)\"",
+    "group": 1
+   },
+   {
+    "op": "setVar",
+    "name": "playerFrom",
+    "value": "{url:raw}"
+   },
+   {
+    "op": "template",
+    "value": "{playHtml:raw}"
+   },
+   {
+    "op": "playerAaaa",
+    "var": "player_aaaa",
+    "key": "url"
+   },
+   {
+    "op": "setVar",
+    "name": "playerUrl",
+    "value": "{url:raw}"
+   },
+   {
+    "op": "first",
+    "branches": [
+     [
+      {
+       "op": "template",
+       "value": "{playerUrl:raw}"
+      },
+      {
+       "op": "regex",
+       "pattern": "(https?://[^\"'\\s]+\\.(?:m3u8|mp4|flv)[^\"'\\s]*)",
+       "group": 1
+      },
+      {
+       "op": "videoUrl"
+      }
+     ],
+     [
+      {
+       "op": "fetch",
+       "url": "/static/js/playerconfig.js",
+       "headers": {
+        "Referer": "https://www.akianime.com/"
+       }
+      },
+      {
+       "op": "regex",
+       "pattern": "\"{playerFrom:raw}\"\\s*:\\s*\\{[\\s\\S]*?\"parse\"\\s*:\\s*\"([^\"]*)\"",
+       "group": 1
+      },
+      {
+       "op": "replace",
+       "pattern": "\\/",
+       "replacement": "/"
+      },
+      {
+       "op": "setVar",
+       "name": "parserBase",
+       "value": "{url:raw}"
+      },
+      {
+       "op": "template",
+       "value": "{parserBase:raw}"
+      },
+      {
+       "op": "regex",
+       "pattern": "(https?://[^/]+)",
+       "group": 1
+      },
+      {
+       "op": "setVar",
+       "name": "parserHost",
+       "value": "{url:raw}"
+      },
+      {
+       "op": "fetch",
+       "url": "{parserBase:raw}{playerUrl:raw}",
+       "headers": {
+        "Referer": "https://www.akianime.com/"
+       }
+      },
+      {
+       "op": "setVar",
+       "name": "parserHtml",
+       "value": "{url:raw}"
+      },
+      {
+       "op": "template",
+       "value": "{parserHtml:raw}"
+      },
+      {
+       "op": "regex",
+       "pattern": "\"time\"\\s*:\\s*\"([^\"]+)\"",
+       "group": 1
+      },
+      {
+       "op": "setVar",
+       "name": "parserTime",
+       "value": "{url:raw}"
+      },
+      {
+       "op": "template",
+       "value": "{parserHtml:raw}"
+      },
+      {
+       "op": "regex",
+       "pattern": "\"key\"\\s*:\\s*\"([^\"]+)\"",
+       "group": 1
+      },
+      {
+       "op": "setVar",
+       "name": "parserKey",
+       "value": "{url:raw}"
+      },
+      {
+       "op": "fetch",
+       "url": "{parserHost:raw}/api_config.php",
+       "method": "POST",
+       "contentType": "application/x-www-form-urlencoded",
+       "headers": {
+        "X-Requested-With": "XMLHttpRequest",
+        "Origin": "{parserHost:raw}",
+        "Referer": "{parserBase:raw}"
+       },
+       "body": "url={playerUrl:raw}&time={parserTime:raw}&key={parserKey:raw}"
+      },
+      {
+       "op": "json",
+       "path": "url"
+      },
+      {
+       "op": "videoUrl"
+      }
+     ],
+     [
+      {
+       "op": "sniff",
+       "goal": "video",
+       "url": "{episodeId:raw}",
+       "resolveMediaRedirects": true,
+       "timeoutMs": 60000,
+       "settleMs": 2000
+      }
+     ]
+    ]
+   },
+   {
+    "op": "setMediaHeaders",
+    "remove": [
+     "Referer"
+    ]
+   }
+  ],
+  "useWebview": true,
+  "mediaValidationTimeoutMs": 30000,
+  "home": [
+   {
+    "op": "fetch",
+    "url": "/"
+   },
+   {
+    "op": "searchList",
+    "selectors": [
+     ".public-list-box",
+     ".search-list",
+     ".vod-detail",
+     "#dataList .public-list-box"
+    ],
+    "detailPattern": "/bgmdetail/"
+   }
+  ]
+ },
+ "enabled": true,
+ "createdAt": "2026-09-10T14:26:51.355801",
+ "updatedAt": "2026-09-28T10:30:00.000000"
 }

@@ -13,6 +13,7 @@ import 'package:baka/instance.dart';
 import 'package:baka/services/source/source_repository.dart';
 import 'package:baka/services/matching/source_match_engine.dart';
 import 'package:baka/utils/bgm_utils.dart';
+import 'package:baka/utils/toast_utils.dart';
 
 class AnimeSearchController {
   static const int gvMinLength = 2;
@@ -182,6 +183,11 @@ class AnimeSearchController {
         if (!_disposed && task.wanted) {
           Log.w('Search', 'Search failed for ${task.key.query}: $error');
           _results.value = const [];
+          showSnackBar(
+            '搜索失败（${selectedSourceLabel}）：${_briefError(error)}',
+            isError: true,
+            duration: const Duration(seconds: 5),
+          );
         }
       } finally {
         if (!_disposed && task.wanted) isLoadingNotifier.value = false;
@@ -198,6 +204,29 @@ class AnimeSearchController {
 
   bool _isGvKey(String query) =>
       query.length > gvMinLength && query.startsWith('gv');
+
+  /// 定制版：把 Dart 网络异常转成可阅读的短句，避免只显示「未找到结果」。
+  String _briefError(Object error) {
+    final text = error.toString();
+    final lower = text.toLowerCase();
+    if (lower.contains('timeoutexception') || lower.contains('timeout')) {
+      return '请求超时';
+    }
+    if (lower.contains('socketexception') ||
+        lower.contains('connection refused') ||
+        lower.contains('connection reset') ||
+        lower.contains('failed host lookup')) {
+      return '网络连接失败';
+    }
+    if (lower.contains('handshakeexception') ||
+        lower.contains('certificate')) {
+      return '证书校验失败';
+    }
+    if (lower.contains('httpexception') || lower.contains('statuscode')) {
+      return '服务器返回错误';
+    }
+    return text.length > 60 ? '${text.substring(0, 60)}...' : text;
+  }
 
   Future<List<Map<String, dynamic>>> _searchSelectedSource(
     _SearchTask task,
@@ -251,6 +280,7 @@ class AnimeSearchController {
       ),
     ];
     final results = <Map<String, dynamic>>[];
+    final failures = <String>[];
     bool isActive() => !_disposed && task.wanted && !task.operation.isCancelled;
 
     await runConcurrent(
@@ -277,13 +307,23 @@ class AnimeSearchController {
             _results.publish(results);
           }
         } catch (error) {
-          if (isActive()) Log.w('Search', 'Search failed for $source: $error');
+          if (isActive()) {
+            Log.w('Search', 'Search failed for $source: $error');
+            failures.add('$source: ${_briefError(error)}');
+          }
         } finally {
           operation.cancel();
           operation.close();
         }
       },
     );
+    if (isActive() && results.isEmpty && failures.isNotEmpty) {
+      showSnackBar(
+        '全部 ${failures.length} 个源搜索失败，首个错误：${failures.first}',
+        isError: true,
+        duration: const Duration(seconds: 6),
+      );
+    }
     return isActive() ? results : const [];
   }
 

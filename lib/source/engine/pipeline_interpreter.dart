@@ -247,6 +247,41 @@ class PipelineInterpreter {
     );
   }
 
+  /// 运行首页管线，产出「浏览」页聚合首页的卡片列表。
+  ///
+  /// 复用 search 同款的 `searchList` / `jsonSeries` 等操作产出 `Series` 卡片，
+  /// 因此 home 段与 search 段同构，只是没有关键词输入。
+  Future<List<Series>> runHome(SourceRule rule, PipelineHost host) async {
+    final ctx = _PipelineContext(
+      host: host,
+      baseUrl: rule.baseUrl,
+      inputName: 'home',
+      input: '',
+      priority: RequestPriority.search,
+    );
+    await _runSteps(rule.home, ctx);
+    return ctx.seriesOut;
+  }
+
+  /// 运行分类管线：输入 [categoryId]，产出该分类下的卡片列表。
+  ///
+  /// 管线内可用 `{categoryId}` 模板引用分类标识。
+  Future<List<Series>> runCategory(
+    SourceRule rule,
+    PipelineHost host,
+    String categoryId,
+  ) async {
+    final ctx = _PipelineContext(
+      host: host,
+      baseUrl: rule.baseUrl,
+      inputName: 'categoryId',
+      input: categoryId,
+      priority: RequestPriority.search,
+    );
+    await _runSteps(rule.category, ctx);
+    return ctx.seriesOut;
+  }
+
   Future<void> _runSteps(List<PipelineStep> steps, _PipelineContext ctx) async {
     for (final step in steps) {
       SourceOperation.check();
@@ -1190,16 +1225,27 @@ class PipelineInterpreter {
 
   /// `maccmsApiEpisodes`：解析 MacCMS provide API 的播放线路。
   /// `vod_play_url` 以 `$$$` 分线路、`#` 分剧集、`$` 分标题与地址。
+  ///
+  /// `listPath` 既可以指向列表接口的数组（配合 `index` 取第几条），也可以
+  /// 指向详情接口里的单个对象（如 `Vod/get_detail` 的 `info`）——后者常见于
+  /// 纯前端站点的详情接口，一个请求只返回一部剧。
   void _opMaccmsApiEpisodes(PipelineStep step, _PipelineContext ctx) {
     ctx.sinkRuns++;
     final data = ctx.json;
     final list = jsonPath(data, step.str('listPath') ?? 'list');
-    if (list is! List || list.isEmpty) return;
-
-    final index = step.intValue('index') ?? 0;
-    if (index < 0 || index >= list.length) return;
-    final item = list[index];
-    if (item is! Map) return;
+    final Map<dynamic, dynamic> item;
+    if (list is List) {
+      if (list.isEmpty) return;
+      final index = step.intValue('index') ?? 0;
+      if (index < 0 || index >= list.length) return;
+      final raw = list[index];
+      if (raw is! Map) return;
+      item = raw;
+    } else if (list is Map) {
+      item = list;
+    } else {
+      return;
+    }
 
     final sourceNames =
         item[step.str('fromKey') ?? 'vod_play_from']?.toString().split(

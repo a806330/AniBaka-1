@@ -1,133 +1,179 @@
 {
-  "format": "anx-rule/2",
-  "id": "moonci",
-  "name": "Moonci",
-  "baseUrl": "https://www.moonci.com",
-  "iconUrl": "https://www.moonci.com/favicon.ico",
-  "description": "Moonci 动漫视频源。",
-  "headers": {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
-    "Referer": "https://www.moonci.com/"
+ "format": "anx-rule/2",
+ "id": "moonci",
+ "name": "Moonci",
+ "baseUrl": "https://www.moonci.com",
+ "iconUrl": "https://www.moonci.com/favicon.ico",
+ "description": "Moonci 动漫视频源。",
+ "headers": {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+  "Referer": "https://www.moonci.com/"
+ },
+ "search": [
+  {
+   "op": "fetch",
+   "url": "/search/-------------.html?wd={keyword}"
   },
-  "search": [
-    {
+  {
+   "op": "searchList",
+   "selectors": [
+    "li.hl-list-item"
+   ],
+   "linkSelector": ".hl-item-title > a",
+   "titleSelector": ".hl-item-title > a",
+   "imageSelector": "a.hl-item-thumb",
+   "imageAttr": "data-original",
+   "keywordMatch": true
+  }
+ ],
+ "detail": [
+  {
+   "op": "follow"
+  },
+  {
+   "op": "episodes",
+   "listSelectors": [
+    "ul.hl-plays-list"
+   ],
+   "tabSelectors": [
+    ".hl-plays-from a"
+   ],
+   "tabAttr": "alt"
+  }
+ ],
+ "play": [
+  {
+   "op": "fetch",
+   "url": "{episodeId:raw}"
+  },
+  {
+   "op": "first",
+   "branches": [
+    [
+     {
+      "op": "playerAaaa"
+     },
+     {
+      "op": "regex",
+      "pattern": "^(https?://\\S+\\.(?:m3u8|mp4|mkv|flv)(?:[?#]\\S*)?)$",
+      "group": 1
+     },
+     {
+      "op": "videoUrl"
+     }
+    ],
+    [
+     {
+      "op": "playerAaaa"
+     },
+     {
+      "op": "regex",
+      "pattern": "^(https?://[^\\s]+|[A-Za-z0-9+/=_-]+)$",
+      "group": 1
+     },
+     {
       "op": "fetch",
-      "url": "/search/-------------.html?wd={keyword}"
-    },
-    {
-      "op": "searchList",
-      "selectors": [
-        "li.hl-list-item"
-      ],
-      "linkSelector": ".hl-item-title > a",
-      "titleSelector": ".hl-item-title > a",
-      "imageSelector": "a.hl-item-thumb",
-      "imageAttr": "data-original",
-      "keywordMatch": true
-    }
-  ],
-  "detail": [
-    {
-      "op": "follow"
-    },
-    {
-      "op": "episodes",
-      "listSelectors": [
-        "ul.hl-plays-list"
-      ],
-      "tabSelectors": [
-        ".hl-plays-from a"
-      ],
-      "tabAttr": "alt"
-    }
-  ],
-  "play": [
-    {
-      "op": "fetch",
-      "url": "{episodeId:raw}"
-    },
-    {
-      "op": "first",
-      "branches": [
-        [
-          {
-            "op": "playerAaaa"
-          },
-          {
-            "op": "regex",
-            "pattern": "^(https?://\\S+\\.(?:m3u8|mp4|mkv|flv)(?:[?#]\\S*)?)$",
-            "group": 1
-          },
-          {
-            "op": "videoUrl"
-          }
-        ],
-        [
-          {
-            "op": "playerAaaa"
-          },
-          {
-            "op": "regex",
-            "pattern": "^(https?://[^\\s]+|[A-Za-z0-9+/=_-]+)$",
-            "group": 1
-          },
-          {
-            "op": "fetch",
-            "url": "/player/?url={url}",
-            "headers": { "Referer": "{episodeId:raw}" }
-          },
-          {
-            "op": "setVar",
-            "name": "playerHtml",
-            "value": "{url:raw}"
-          },
-          {
-            "op": "regex",
-            "pattern": "\\bconst\\s+sessionKey\\s*=\\s*\"([^\"]+)\"",
-            "group": 1
-          },
-          {
-            "op": "setVar",
-            "name": "sessionKey",
-            "value": "{url:raw}"
-          },
-          {
-            "op": "template",
-            "value": "{playerHtml:raw}"
-          },
-          {
-            "op": "regex",
-            "pattern": "\\bconst\\s+encryptedUrl\\s*=\\s*\"([A-Za-z0-9+/=]+)\"",
-            "group": 1
-          },
-          {
-            "op": "crypto",
-            "algo": "aes-cbc",
-            "key": "{sessionKey:raw}",
-            "ivPrefix": true
-          },
-          {
-            "op": "regex",
-            "pattern": "^(https?://\\S+\\.(?:m3u8|mp4|mkv|flv)(?:[?#]\\S*)?)$",
-            "group": 1
-          },
-          {
-            "op": "setMediaHeaders",
-            "headers": { "Referer": "https://www.moonci.com/player/" }
-          }
-        ],
-        [
-          {
-            "op": "sniff",
-            "goal": "video",
-            "url": "{episodeId:raw}",
-            "resolveMediaRedirects": true,
-            "timeoutMs": 60000,
-            "settleMs": 1000
-          }
-        ]
-      ]
-    }
-  ],
-  "useWebview": true
+      "url": "/player/?url={url}",
+      "headers": {
+       "Referer": "{episodeId:raw}"
+      }
+     },
+     {
+      "op": "setVar",
+      "name": "playerHtml",
+      "value": "{url:raw}"
+     },
+     {
+      "op": "regex",
+      "pattern": "\\bconst\\s+sessionKey\\s*=\\s*\"([^\"]+)\"",
+      "group": 1
+     },
+     {
+      "op": "setVar",
+      "name": "sessionKey",
+      "value": "{url:raw}"
+     },
+     {
+      "op": "template",
+      "value": "{playerHtml:raw}"
+     },
+     {
+      "op": "regex",
+      "pattern": "\\bconst\\s+encryptedUrl\\s*=\\s*\"([A-Za-z0-9+/=]+)\"",
+      "group": 1
+     },
+     {
+      "op": "crypto",
+      "algo": "aes-cbc",
+      "key": "{sessionKey:raw}",
+      "ivPrefix": true
+     },
+     {
+      "op": "regex",
+      "pattern": "^(https?://\\S+\\.(?:m3u8|mp4|mkv|flv)(?:[?#]\\S*)?)$",
+      "group": 1
+     },
+     {
+      "op": "setMediaHeaders",
+      "headers": {
+       "Referer": "https://www.moonci.com/player/"
+      }
+     }
+    ],
+    [
+     {
+      "op": "sniff",
+      "goal": "video",
+      "url": "{episodeId:raw}",
+      "resolveMediaRedirects": true,
+      "timeoutMs": 60000,
+      "settleMs": 1000
+     }
+    ]
+   ]
+  }
+ ],
+ "useWebview": true,
+ "home": [
+  {
+   "op": "fetch",
+   "url": "/"
+  },
+  {
+   "op": "searchList",
+   "selectors": [
+    ".search-item",
+    ".module-item",
+    "a[href*=\"/anime/\"]"
+   ],
+   "detailPattern": "/anime/"
+  }
+ ],
+ "categories": [
+  {
+   "id": "20",
+   "name": "新番"
+  },
+  {
+   "id": "21",
+   "name": "番剧"
+  },
+  {
+   "id": "22",
+   "name": "剧场"
+  }
+ ],
+ "category": [
+  {
+   "op": "fetch",
+   "url": "/type/{categoryId}.html"
+  },
+  {
+   "op": "searchList",
+   "selectors": [
+    ".hl-list-item"
+   ],
+   "detailPattern": "/anime/"
+  }
+ ]
 }
