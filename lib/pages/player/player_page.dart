@@ -764,7 +764,9 @@ class _PlayerPageState extends State<PlayerPage>
   /// Episode picking and caching share one panel; only the mode differs.
   Future<void> _showEpisodePicker({bool downloadMode = false}) async {
     final content = _content;
-    final detail = content.buildDetailData();
+    // Upstream caches `detailData` as an unmodifiable map, so copy it before
+    // attaching the download-only line hint.
+    final detail = Map<String, dynamic>.from(content.detailData);
     // 把当前选中的「播放地址名」（线路名，如「播放源1」「播放源2」）带进
     // 下载任务。有些扩展源把同一部作品拆成多个播放地址，作品文件夹名需
     // 据此区分，否则不同播放地址下载的同名作品都会落进同一个文件夹。
@@ -782,7 +784,7 @@ class _PlayerPageState extends State<PlayerPage>
       videoId: '${content.data['id']}',
       isFullScreen:
           _fullscreen && (downloadMode || !Instances.isDesktopPlatform),
-      postDetail: content.detailData,
+      postDetail: detail,
       urlResolver: content.resolveEpisodeUrl,
       resolveTarget: content,
       startInDownloadMode: downloadMode,
