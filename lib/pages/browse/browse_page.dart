@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:baka/app/platform_page_route.dart';
 import 'package:baka/pages/browse/source_site_page.dart';
 import 'package:baka/services/source/source_repository.dart';
 import 'package:baka/source/source_registry.dart';
@@ -124,8 +123,10 @@ class BrowsePage extends StatelessWidget {
   }
 
   void _open(BuildContext context, _BrowseEntry entry) {
+    // Upstream 5.2.5 routes plain pages through MaterialPageRoute so the theme's
+    // ContainerPageTransitionsBuilder can animate them.
     Navigator.of(context).push(
-      platformPageRoute<void>(
+      MaterialPageRoute<void>(
         builder: (_) => SourceSitePage(
           sourceKey: entry.sourceKey,
           displayName: entry.name,
