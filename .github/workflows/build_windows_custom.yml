@@ -41,6 +41,11 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
+      # 诊断用：把全部分析问题一次性打进日志，不阻断构建。
+      - name: Analyze (diagnostic)
+        continue-on-error: true
+        run: flutter analyze lib/ --no-fatal-warnings --no-fatal-infos
+
       - name: Build Windows
         run: flutter build windows --${{ inputs.build_mode || 'release' }}
 
