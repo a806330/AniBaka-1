@@ -991,9 +991,17 @@ class DownloadService {
         if (attempt == 2) rethrow;
         // 清掉可能残留的半成品，避免复用到损坏的旧分片，再重新解析清单重试。
         final bad = File(_joinPath(cacheDir.path, current.localName));
-        if (await bad.exists()) await bad.delete().catchError((_) {});
+        if (await bad.exists()) {
+          try {
+            await bad.delete();
+          } catch (_) {}
+        }
         final badPart = File('${bad.path}.part');
-        if (await badPart.exists()) await badPart.delete().catchError((_) {});
+        if (await badPart.exists()) {
+          try {
+            await badPart.delete();
+          } catch (_) {}
+        }
         final fresh = await _resolveMediaPlaylist(task.url, cancelToken);
         final freshPlan = planHlsDownload(fresh.url, fresh.content);
         current = freshPlan.assets.firstWhere(
@@ -1065,7 +1073,9 @@ class DownloadService {
       // 按 localName 重新解析清单并重下整段。
       final finalLength = await target.length();
       if (finalLength != range.length) {
-        await target.delete().catchError((_) {});
+        try {
+          await target.delete();
+        } catch (_) {}
         throw StateError(
           'segment ${asset.localName} size $finalLength != ${range.length}',
         );

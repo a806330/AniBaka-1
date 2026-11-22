@@ -8,7 +8,6 @@ import 'package:baka/services/download/download_manager.dart';
 import 'package:baka/services/download/download_resolve_manager.dart';
 import 'package:baka/services/playback/history_repository.dart';
 import 'package:baka/services/playback/playback_content.dart';
-import 'package:baka/utils/toast_utils.dart';
 import 'package:baka/widgets/episode/episode_widgets.dart';
 
 const _kSearchThreshold = 12;
