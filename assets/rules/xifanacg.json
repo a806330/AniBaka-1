@@ -113,25 +113,68 @@
  "home": [
   {
    "op": "fetch",
-   "url": "https://api.xifanacg.com/rest/v1/rpc/search_animes",
+   "url": "https://supa.xifanacg.com/rest/v1/rpc/get_homepage_full",
    "method": "POST",
    "contentType": "application/json",
    "headers": {
     "Accept": "application/json",
     "apikey": "sb_publishable_OBIVAWACIX6lPXrO98_z24_HcsmalkA",
     "Authorization": "Bearer sb_publishable_OBIVAWACIX6lPXrO98_z24_HcsmalkA",
-    "Origin": "https://next.xifanacg.com"
+    "Origin": "https://next.xifanacg.com",
+    "Referer": "https://next.xifanacg.com/"
    },
-   "body": {
-    "search_term": ""
-   }
+   "body": {}
   },
   {
    "op": "jsonSeries",
+   "listPath": "recently_new",
    "idKey": "id",
    "nameKey": "title",
    "imageKey": "cover_url",
-   "descKey": "description",
+   "descKey": "current_episodes",
+   "detailUrlTemplate": "/anime/{id}"
+  }
+ ],
+ "categories": [
+  {
+   "id": "recently_new",
+   "name": "最近更新"
+  },
+  {
+   "id": "recommended",
+   "name": "编辑推荐"
+  },
+  {
+   "id": "recently_old",
+   "name": "经典旧作"
+  },
+  {
+   "id": "today_schedule",
+   "name": "今日放送"
+  }
+ ],
+ "category": [
+  {
+   "op": "fetch",
+   "url": "https://supa.xifanacg.com/rest/v1/rpc/get_homepage_full",
+   "method": "POST",
+   "contentType": "application/json",
+   "headers": {
+    "Accept": "application/json",
+    "apikey": "sb_publishable_OBIVAWACIX6lPXrO98_z24_HcsmalkA",
+    "Authorization": "Bearer sb_publishable_OBIVAWACIX6lPXrO98_z24_HcsmalkA",
+    "Origin": "https://next.xifanacg.com",
+    "Referer": "https://next.xifanacg.com/"
+   },
+   "body": {}
+  },
+  {
+   "op": "jsonSeries",
+   "listPath": "{categoryId}",
+   "idKey": "id",
+   "nameKey": "title",
+   "imageKey": "cover_url",
+   "descKey": "current_episodes",
    "detailUrlTemplate": "/anime/{id}"
   }
  ]

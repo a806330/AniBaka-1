@@ -142,37 +142,47 @@
   {
    "op": "searchList",
    "selectors": [
-    ".search-item",
-    ".module-item",
-    "a[href*=\"/anime/\"]"
+    ".hl-list-item"
    ],
+   "linkSelector": "a.hl-item-thumb",
+   "titleSelector": "a.hl-item-thumb",
+   "titleAttr": "title",
+   "imageSelector": "a.hl-item-thumb",
+   "imageAttr": "data-original",
+   "descSelector": ".remarks",
    "detailPattern": "/anime/"
   }
  ],
  "categories": [
   {
-   "id": "20",
+   "id": "/type/20.html",
    "name": "新番"
   },
   {
-   "id": "21",
+   "id": "/type/21.html",
    "name": "番剧"
   },
   {
-   "id": "22",
+   "id": "/type/22.html",
    "name": "剧场"
   }
  ],
  "category": [
   {
    "op": "fetch",
-   "url": "/type/{categoryId}.html"
+   "url": "{categoryId}"
   },
   {
    "op": "searchList",
    "selectors": [
     ".hl-list-item"
    ],
+   "linkSelector": "a.hl-item-thumb",
+   "titleSelector": "a.hl-item-thumb",
+   "titleAttr": "title",
+   "imageSelector": "a.hl-item-thumb",
+   "imageAttr": "data-original",
+   "descSelector": ".remarks",
    "detailPattern": "/anime/"
   }
  ]

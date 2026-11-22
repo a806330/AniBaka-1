@@ -126,19 +126,59 @@
  "home": [
   {
    "op": "fetch",
-   "url": "/ajax/suggest?mid=1&wd=a&limit=30",
+   "url": "/index.php/ajax/data?mid=1&limit=30&page=1",
    "headers": {
-    "X-Requested-With": "XMLHttpRequest",
-    "Referer": "https://ios.mifun.org/"
+    "X-Requested-With": "XMLHttpRequest"
    }
   },
   {
    "op": "jsonSeries",
    "listPath": "list",
-   "idKey": "id",
-   "nameKey": "name",
-   "imageKey": "pic",
+   "idKey": "vod_id",
+   "nameKey": "vod_name",
+   "imageKey": "vod_pic",
+   "descKey": "vod_remarks",
    "detailUrlTemplate": "/voddetail/{id}/"
+  }
+ ],
+ "categories": [
+  {
+   "id": "1",
+   "name": "番剧"
+  },
+  {
+   "id": "2",
+   "name": "国创"
+  },
+  {
+   "id": "3",
+   "name": "剧场"
+  },
+  {
+   "id": "4",
+   "name": "美漫"
+  },
+  {
+   "id": "5",
+   "name": "特摄"
+  }
+ ],
+ "category": [
+  {
+   "op": "fetch",
+   "url": "/vodtype/{categoryId}/"
+  },
+  {
+   "op": "searchList",
+   "selectors": [
+    "li.hl-list-item"
+   ],
+   "detailPattern": "/voddetail/",
+   "linkSelector": "a.hl-item-thumb",
+   "titleAttr": "title",
+   "imageSelector": "a.hl-item-thumb",
+   "imageAttr": "data-original",
+   "descSelector": ".hl-pic-tag span"
   }
  ]
 }

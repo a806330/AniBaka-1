@@ -2,14 +2,14 @@
  "format": "anx-rule/2",
  "id": "fsdm02",
  "name": "番薯动漫",
- "baseUrl": "https://dm.fsdm02.com",
+ "baseUrl": "https://www.fsdm02.com",
  "iconUrl": "https://p0.ssl.qhimg.com/t016852bd7df93fb9de.png",
  "description": "番薯动漫视频源",
  "headers": {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
-  "Accept": "application/json, text/plain, */*",
-  "Referer": "https://www.fsdm02.com/",
-  "X-Forwarded-For": "127.0.0.1"
+  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "zh-CN,zh;q=0.9",
+  "Referer": "https://www.fsdm02.com/"
  },
  "search": [
   {
@@ -65,20 +65,36 @@
  ],
  "detail": [
   {
-   "op": "fetch",
-   "url": "/api.php/provide/vod/?ac=detail&ids={seriesId:raw}"
+   "op": "follow",
+   "headers": {
+    "Referer": "https://www.fsdm02.com/"
+   }
   },
   {
-   "op": "maccmsApiEpisodes",
-   "preferHls": true,
-   "directOnly": true
+   "op": "episodes",
+   "listSelectors": [
+    ".module-play-list"
+   ],
+   "tabSelectors": [
+    ".module-tab-item[data-dropdown-value]"
+   ],
+   "tabAttr": "data-dropdown-value"
   }
  ],
  "play": [
   {
-   "op": "template",
-   "value": "{episodeId:raw}",
-   "filterHlsAds": true
+   "op": "follow",
+   "headers": {
+    "Referer": "https://www.fsdm02.com/"
+   }
+  },
+  {
+   "op": "playerAaaa",
+   "var": "player_aaaa",
+   "key": "url"
+  },
+  {
+   "op": "videoUrl"
   }
  ],
  "useWebview": true,
@@ -86,15 +102,55 @@
  "home": [
   {
    "op": "fetch",
-   "url": "/api.php/provide/vod/?ac=list&pg=1"
+   "url": "/"
   },
   {
-   "op": "jsonSeries",
-   "listPath": "list",
-   "idKey": "vod_id",
-   "nameKey": "vod_name",
-   "imageKey": "vod_pic",
-   "descKey": "vod_remarks"
+   "op": "searchList",
+   "selectors": [
+    "a.module-poster-item",
+    "a.module-item"
+   ],
+   "detailPattern": "/voddetail/",
+   "titleAttr": "title",
+   "imageSelector": "img",
+   "imageAttr": "data-original",
+   "descSelector": ".module-item-note"
+  }
+ ],
+ "categories": [
+  {
+   "id": "1",
+   "name": "TV番剧"
+  },
+  {
+   "id": "22",
+   "name": "国产动漫"
+  },
+  {
+   "id": "3",
+   "name": "剧场版"
+  },
+  {
+   "id": "21",
+   "name": "欧美动漫"
+  }
+ ],
+ "category": [
+  {
+   "op": "fetch",
+   "url": "/vodtype/{categoryId}.html"
+  },
+  {
+   "op": "searchList",
+   "selectors": [
+    "a.module-poster-item",
+    "a.module-item"
+   ],
+   "detailPattern": "/voddetail/",
+   "titleAttr": "title",
+   "imageSelector": "img",
+   "imageAttr": "data-original",
+   "descSelector": ".module-item-note"
   }
  ]
 }

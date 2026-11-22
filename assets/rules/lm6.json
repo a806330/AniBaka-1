@@ -382,32 +382,59 @@
   {
    "op": "searchList",
    "selectors": [
-    ".video-img-box",
-    ".detail"
+    ".video-img-box"
    ],
+   "linkSelector": "a[href^=\"/detail/\"]",
+   "titleSelector": ".title",
+   "titleAttr": "text",
+   "imageSelector": "img.lazyload",
+   "imageAttr": "data-src",
+   "descSelector": ".absolute-bottom-right .label",
    "detailPattern": "/detail/"
   }
  ],
  "categories": [
   {
-   "id": "dongman",
-   "name": "动漫"
+   "id": "/type/dongman.html",
+   "name": "番剧"
   },
   {
-   "id": "dianying",
+   "id": "/type/ribendongman.html",
+   "name": "日本动漫"
+  },
+  {
+   "id": "/type/guochandongman.html",
+   "name": "国产动漫"
+  },
+  {
+   "id": "/type/oumeidongman.html",
+   "name": "欧美动漫"
+  },
+  {
+   "id": "/type/dianying.html",
    "name": "电影"
+  },
+  {
+   "id": "/type/teshepian.html",
+   "name": "特摄"
   }
  ],
  "category": [
   {
    "op": "fetch",
-   "url": "/type/{categoryId}.html"
+   "url": "{categoryId}"
   },
   {
    "op": "searchList",
    "selectors": [
     ".video-img-box"
    ],
+   "linkSelector": "a[href^=\"/detail/\"]",
+   "titleSelector": ".title",
+   "titleAttr": "text",
+   "imageSelector": "img.lazyload",
+   "imageAttr": "data-src",
+   "descSelector": ".absolute-bottom-right .label",
    "detailPattern": "/detail/"
   }
  ]

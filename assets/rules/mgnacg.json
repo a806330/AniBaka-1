@@ -147,19 +147,47 @@
  "home": [
   {
    "op": "fetch",
-   "url": "/ajax/suggest?mid=1&wd=a&limit=30",
+   "url": "/index.php/ajax/data?mid=1&limit=30&page=1",
    "headers": {
-    "X-Requested-With": "XMLHttpRequest",
-    "Referer": "https://www.mgnacg.com/"
+    "X-Requested-With": "XMLHttpRequest"
    }
   },
   {
    "op": "jsonSeries",
    "listPath": "list",
-   "idKey": "id",
-   "nameKey": "name",
-   "imageKey": "pic",
-   "detailUrlTemplate": "/media/{id}/"
+   "idKey": "vod_id",
+   "nameKey": "vod_name",
+   "urlKey": "detail_link",
+   "imageKey": "vod_pic",
+   "descKey": "vod_serial"
+  }
+ ],
+ "categories": [
+  {
+   "id": "1",
+   "name": "动漫"
+  },
+  {
+   "id": "2",
+   "name": "剧场版"
+  }
+ ],
+ "category": [
+  {
+   "op": "fetch",
+   "url": "/index.php/ajax/data?mid=1&limit=30&page=1&tid={categoryId}",
+   "headers": {
+    "X-Requested-With": "XMLHttpRequest"
+   }
+  },
+  {
+   "op": "jsonSeries",
+   "listPath": "list",
+   "idKey": "vod_id",
+   "nameKey": "vod_name",
+   "urlKey": "detail_link",
+   "imageKey": "vod_pic",
+   "descKey": "vod_serial"
   }
  ]
 }

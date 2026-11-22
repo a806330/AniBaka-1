@@ -229,16 +229,46 @@
    {
     "op": "searchList",
     "selectors": [
-     ".public-list-box",
-     ".search-list",
-     ".vod-detail",
-     "#dataList .public-list-box"
+     ".public-list-box"
     ],
+    "linkSelector": "a.public-list-exp",
+    "titleSelector": "a.time-title",
+    "titleAttr": "title",
+    "imageSelector": "img",
+    "imageAttr": "data-src",
+    "detailPattern": "/bgmdetail/"
+   }
+  ],
+  "category": [
+   {
+    "op": "fetch",
+    "url": "{categoryId}"
+   },
+   {
+    "op": "searchList",
+    "selectors": [
+     ".public-list-box"
+    ],
+    "linkSelector": "a.public-list-exp",
+    "titleSelector": "a.time-title",
+    "titleAttr": "title",
+    "imageSelector": "img",
+    "imageAttr": "data-src",
     "detailPattern": "/bgmdetail/"
    }
   ]
  },
  "enabled": true,
  "createdAt": "2026-09-10T14:26:51.355801",
- "updatedAt": "2026-09-28T10:30:00.000000"
+ "updatedAt": "2026-09-28T10:30:00.000000",
+ "categories": [
+  {
+   "id": "/bgmtype/20.html",
+   "name": "番剧"
+  },
+  {
+   "id": "/bgmtype/21.html",
+   "name": "剧场"
+  }
+ ]
 }

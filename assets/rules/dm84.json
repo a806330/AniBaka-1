@@ -128,17 +128,51 @@
   {
    "op": "searchList",
    "selectors": [
-    ".search-list .item",
-    ".video-list li",
-    ".drama-module li",
-    ".module-items .module-item",
-    ".module-search-item",
-    ".stui-vodlist__box",
-    ".list-item",
-    "ul.items li",
-    "div.item",
-    "li.video-item"
+    ".item"
    ],
+   "linkSelector": "a.title",
+   "titleSelector": "a.title",
+   "titleAttr": "title",
+   "imageSelector": "a.cover",
+   "imageAttr": "data-bg",
+   "descSelector": "span.desc",
+   "detailPattern": "/v/"
+  }
+ ],
+ "categories": [
+  {
+   "id": "/list-1.html",
+   "name": "国漫"
+  },
+  {
+   "id": "/list-2.html",
+   "name": "日漫"
+  },
+  {
+   "id": "/list-3.html",
+   "name": "欧美动漫"
+  },
+  {
+   "id": "/list-4.html",
+   "name": "电影"
+  }
+ ],
+ "category": [
+  {
+   "op": "fetch",
+   "url": "{categoryId}"
+  },
+  {
+   "op": "searchList",
+   "selectors": [
+    ".item"
+   ],
+   "linkSelector": "a.title",
+   "titleSelector": "a.title",
+   "titleAttr": "title",
+   "imageSelector": "a.cover",
+   "imageAttr": "data-bg",
+   "descSelector": "span.desc",
    "detailPattern": "/v/"
   }
  ]

@@ -147,34 +147,48 @@
   {
    "op": "searchList",
    "selectors": [
-    "a.video-wrapper[href*=\"/voddetail/\"], .module-card-item, .module-poster-item, .module-search-item, .stui-vodlist__box, .stui-vodlist li, a[href*=\"/voddetail/\"], a[href*=\"/vod/detail/\"], a[href*=\"/detail/\"]"
-   ]
+    ".video"
+   ],
+   "linkSelector": "a.video-wrapper",
+   "titleSelector": ".video-name",
+   "titleAttr": "text",
+   "imageSelector": "img.videoimg",
+   "imageAttr": "src",
+   "descSelector": ".video-time",
+   "detailPattern": "/voddetail/"
   }
  ],
  "categories": [
   {
-   "id": "1",
+   "id": "/vodtype/1.html",
    "name": "TV番剧"
   },
   {
-   "id": "2",
+   "id": "/vodtype/2.html",
    "name": "剧场电影"
   },
   {
-   "id": "4",
-   "name": "动漫"
+   "id": "/vodtype/4.html",
+   "name": "特摄剧"
   }
  ],
  "category": [
   {
    "op": "fetch",
-   "url": "/vodtype/{categoryId}.html"
+   "url": "{categoryId}"
   },
   {
    "op": "searchList",
    "selectors": [
-    "a.video-wrapper[href*=\"/voddetail/\"], .module-card-item, .module-poster-item, .module-search-item, .stui-vodlist__box, .stui-vodlist li, a[href*=\"/voddetail/\"], a[href*=\"/vod/detail/\"], a[href*=\"/detail/\"]"
-   ]
+    ".video"
+   ],
+   "linkSelector": "a.video-wrapper",
+   "titleSelector": ".video-name",
+   "titleAttr": "text",
+   "imageSelector": "img.videoimg",
+   "imageAttr": "src",
+   "descSelector": ".video-time",
+   "detailPattern": "/voddetail/"
   }
  ]
 }

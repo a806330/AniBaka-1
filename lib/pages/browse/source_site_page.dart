@@ -45,6 +45,7 @@ class _SourceSitePageState extends State<SourceSitePage>
   SourceAdapter? _adapter;
   List<SourceCategory> _categories = const [];
   String _host = '';
+  String _origin = '';
 
   String _query = '';
   bool _searching = false;
@@ -61,6 +62,9 @@ class _SourceSitePageState extends State<SourceSitePage>
     _categories = adapter?.rule.categories ?? const <SourceCategory>[];
     final baseUrl = widget.baseUrl ?? adapter?.baseUrl ?? '';
     _host = Uri.tryParse(baseUrl)?.host ?? baseUrl;
+    // 封面大多放在源站自己的 /upload 下并校验 Referer，带上源站 Origin 才能出图。
+    final parsed = Uri.tryParse(baseUrl);
+    _origin = parsed == null ? '' : '${parsed.scheme}://${parsed.host}';
     _tabs = TabController(length: _categories.length + 1, vsync: this);
   }
 
@@ -320,6 +324,7 @@ class _SourceSitePageState extends State<SourceSitePage>
           loader: () => adapter.fetchHome(enhanceWithBgm: false),
           profile: profile,
           accent: accent,
+          referer: _origin,
           emptyHint: empty,
           onOpen: _openSeries,
         ),
@@ -330,6 +335,7 @@ class _SourceSitePageState extends State<SourceSitePage>
                 adapter.fetchCategory(category.id, enhanceWithBgm: false),
             profile: profile,
             accent: accent,
+            referer: _origin,
             emptyHint: empty,
             onOpen: _openSeries,
           ),
@@ -351,6 +357,7 @@ class _SourceSitePageState extends State<SourceSitePage>
         items: _results,
         profile: _profile,
         accent: widget.accent,
+        referer: _origin,
         onOpen: _openSeries,
       );
     }
@@ -402,6 +409,7 @@ class _SeriesTab extends StatefulWidget {
     required this.loader,
     required this.profile,
     required this.accent,
+    required this.referer,
     required this.emptyHint,
     required this.onOpen,
   });
@@ -410,6 +418,9 @@ class _SeriesTab extends StatefulWidget {
   final Future<List<Series>> Function() loader;
   final SiteProfile profile;
   final Color accent;
+
+  /// 封面请求要带的 Referer（源站 Origin），否则多数站会 403。
+  final String referer;
   final String emptyHint;
   final void Function(Series series) onOpen;
 
@@ -446,6 +457,29 @@ class _SeriesTabState extends State<_SeriesTab>
       _error = null;
     });
     await _fetch();
+  }
+
+  /// 下拉刷新：保留当前已显示的内容，直接换新，避免整页闪成加载圈。
+  Future<void> _refresh() async {
+    try {
+      final items = await widget.loader();
+      _cache[widget.cacheKey] = _TabCacheEntry(items);
+      if (!mounted) return;
+      setState(() {
+        _items = items;
+        _loading = false;
+        _error = null;
+      });
+    } catch (error) {
+      debugPrint('site tab refresh failed: $error');
+      if (!mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(
+          content: Text('刷新失败，请稍后重试'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   Future<void> _fetch() async {
@@ -494,18 +528,49 @@ class _SeriesTabState extends State<_SeriesTab>
     }
     final items = _items ?? const <Series>[];
     if (items.isEmpty) {
-      return Center(
-        child: Text(
-          widget.emptyHint,
-          style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
+      return RefreshIndicator(
+        onRefresh: _refresh,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            SizedBox(height: MediaQuery.sizeOf(context).height * 0.22),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.inbox_outlined,
+                    size: 28,
+                    color: theme.hintColor.withValues(alpha: 0.7),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.emptyHint,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.hintColor,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: _retry,
+                    child: const Text('重新加载'),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       );
     }
-    return _SeriesGrid(
-      items: items,
-      profile: widget.profile,
-      accent: widget.accent,
-      onOpen: widget.onOpen,
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: _SeriesGrid(
+        items: items,
+        profile: widget.profile,
+        accent: widget.accent,
+        referer: widget.referer,
+        onOpen: widget.onOpen,
+      ),
     );
   }
 }
@@ -526,17 +591,21 @@ class _SeriesGrid extends StatelessWidget {
     required this.items,
     required this.profile,
     required this.accent,
+    required this.referer,
     required this.onOpen,
   });
 
   final List<Series> items;
   final SiteProfile profile;
   final Color accent;
+  final String referer;
   final void Function(Series series) onOpen;
 
   @override
   Widget build(BuildContext context) => GridView.builder(
     padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+    // 内容不足一屏时也要能下拉，否则 RefreshIndicator 触发不了。
+    physics: const AlwaysScrollableScrollPhysics(),
     gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
       maxCrossAxisExtent: profile.maxCrossAxisExtent,
       mainAxisSpacing: 12,
@@ -549,6 +618,7 @@ class _SeriesGrid extends StatelessWidget {
       return _SeriesTile(
         series: item,
         accent: accent,
+        referer: referer,
         onTap: () => onOpen(item),
       );
     },
@@ -559,17 +629,20 @@ class _SeriesTile extends StatelessWidget {
   const _SeriesTile({
     required this.series,
     required this.accent,
+    required this.referer,
     required this.onTap,
   });
 
   final Series series;
   final Color accent;
+  final String referer;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cover = series.image ?? '';
+    final badge = (series.description ?? '').trim();
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -579,14 +652,55 @@ class _SeriesTile extends StatelessWidget {
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: cover.isEmpty
-                  ? _coverFallback()
-                  : Image.network(
-                      cover,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      errorBuilder: (_, _, _) => _coverFallback(),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  cover.isEmpty
+                      ? _coverFallback()
+                      : Image.network(
+                          cover,
+                          fit: BoxFit.cover,
+                          headers: referer.isEmpty
+                              ? null
+                              : {'Referer': '$referer/'},
+                          errorBuilder: (_, _, _) => _coverFallback(),
+                        ),
+                  if (badge.isNotEmpty)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      left: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.78),
+                            ],
+                          ),
+                        ),
+                        child: Text(
+                          badge,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            height: 1.1,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 6),

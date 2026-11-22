@@ -336,7 +336,9 @@ class SourceAdapter implements PipelineHost {
   /// 失败均返回空列表，由 UI 回退到占位。
   Future<List<Series>> fetchHome({bool enhanceWithBgm = true}) =>
       runOperation(() async {
-        final series = await _interpreter.runHome(rule, this);
+        final series = await _retryWhenEmpty(
+          () => _interpreter.runHome(rule, this),
+        );
         if (!enhanceWithBgm) return series;
         await runConcurrent(series.length, 5, (index) async {
           final item = series[index];
@@ -359,7 +361,9 @@ class SourceAdapter implements PipelineHost {
     String categoryId, {
     bool enhanceWithBgm = true,
   }) => runOperation(() async {
-    final series = await _interpreter.runCategory(rule, this, categoryId);
+    final series = await _retryWhenEmpty(
+      () => _interpreter.runCategory(rule, this, categoryId),
+    );
     if (!enhanceWithBgm) return series;
     await runConcurrent(series.length, 5, (index) async {
       final item = series[index];
@@ -376,6 +380,25 @@ class SourceAdapter implements PipelineHost {
     });
     return series;
   });
+
+  /// 栏目/首页列表的空结果重试。
+  ///
+  /// 站点前面普遍挂着反代或防火墙，偶发返回 HTTP 200 的挑战页/超时页，解析
+  /// 出来是 0 条卡片；也偶发直接抛网络错误。这两种都重试一次再向上报错，
+  /// 避免用户看到「该源这个栏目暂时没有内容」这种误导性提示。
+  Future<List<Series>> _retryWhenEmpty(
+    Future<List<Series>> Function() run,
+  ) async {
+    try {
+      final first = await run();
+      if (first.isNotEmpty) return first;
+    } catch (_) {
+      // 首次失败不直接上报，交给下面的重试。
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 800));
+    SourceOperation.check();
+    return run();
+  }
 
   Future<PlaybackCatalog> getPlaybackCatalog(String seriesId) => runOperation(
     () async => PlaybackCatalog.fromSources(await _detailSources(seriesId)),

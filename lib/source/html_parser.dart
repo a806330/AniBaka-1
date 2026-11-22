@@ -32,6 +32,8 @@ class HtmlParser {
     String titleAttr = 'text',
     String? imageSelector,
     String imageAttr = 'src',
+    String? descSelector,
+    String descAttr = 'text',
   }) {
     if (listXPath != null) {
       final results = <Series>[];
@@ -67,6 +69,8 @@ class HtmlParser {
           titleAttr,
           imageSelector,
           imageAttr,
+          descSelector,
+          descAttr,
         );
         if (series != null) results.add(series);
       }
@@ -84,6 +88,8 @@ class HtmlParser {
     String titleAttr,
     String? imageSelector,
     String imageAttr,
+    String? descSelector,
+    String descAttr,
   ) {
     final link = linkSelector == null
         ? (element.localName == 'a'
@@ -101,18 +107,44 @@ class HtmlParser {
         : _select(element, titleSelector);
     final name = _value(title, titleAttr);
     if (name.isEmpty) return null;
-    final src = imageSelector == null
+    final src = _imageSrc(
+      imageSelector == null ? element.querySelector('img') : _select(element, imageSelector),
+      imageAttr,
+    );
+    final desc = descSelector == null
         ? ''
-        : _value(_select(element, imageSelector), imageAttr);
+        : _value(_select(element, descSelector), descAttr).trim();
     return Series(
       href,
       name,
       image: src.isEmpty ? null : VideoUrlExtractor.toAbsolute(src, baseUrl),
+      description: desc.isEmpty ? null : desc,
     );
   }
 
   static Element? _select(Element element, String selector) =>
       selector.isEmpty ? element : element.querySelector(selector);
+
+  /// 封面地址：先按规则指定的属性取，取不到再依次回落到常见懒加载属性。
+  ///
+  /// 站点普遍把真实地址放在 `data-src` / `data-original` / `data-bg`，`src`
+  /// 里是 base64 占位图；占位图会让卡片显示成空白，因此这里统一过滤 `data:`。
+  static String _imageSrc(Element? element, String attr) {
+    if (element == null) return '';
+    final candidates = <String>[
+      attr,
+      'data-original',
+      'data-src',
+      'data-bg',
+      'src',
+    ];
+    for (final key in candidates) {
+      final value = (element.attributes[key] ?? '').trim();
+      if (value.isEmpty || value.startsWith('data:')) continue;
+      return value;
+    }
+    return '';
+  }
 
   static String _value(Element? element, String attr) =>
       (switch (attr) {

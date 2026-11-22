@@ -1018,6 +1018,8 @@ class PipelineInterpreter {
       titleAttr: step.str('titleAttr') ?? 'text',
       imageSelector: step.str('imageSelector'),
       imageAttr: step.str('imageAttr') ?? 'src',
+      descSelector: step.str('descSelector'),
+      descAttr: step.str('descAttr') ?? 'text',
     );
     RegExp? namePattern;
     final nameFilter = step.str('nameFilter') ?? '';
@@ -1056,7 +1058,9 @@ class PipelineInterpreter {
   /// `jsonSeries`：从 JSON 列表构建 Series（JSON API 搜索）。
   void _opJsonSeries(PipelineStep step, _PipelineContext ctx) {
     ctx.sinkRuns++;
-    final target = jsonPath(ctx.json, step.str('listPath') ?? '');
+    // listPath 支持模板变量（如 `{categoryId}`），这样一个聚合接口就能按站点
+    // 原有的分区切换栏目，不必为每个栏目单独写一份管线。
+    final target = jsonPath(ctx.json, _render(step.str('listPath') ?? '', ctx));
     if (target is! List) return;
 
     _appendJsonSeries(target, step, ctx);

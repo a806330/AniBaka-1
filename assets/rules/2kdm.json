@@ -138,8 +138,50 @@
   {
    "op": "searchList",
    "selectors": [
-    ".module-card-item, .module-poster-item, .module-search-item, a[href*=\"/voddetail/\"]"
-   ]
+    "a.video-card"
+   ],
+   "titleSelector": ".video-card-title",
+   "titleAttr": "text",
+   "imageSelector": "img.poster-image",
+   "imageAttr": "src",
+   "descSelector": ".poster-status",
+   "detailPattern": "/video/"
+  }
+ ],
+ "categories": [
+  {
+   "id": "/category/20",
+   "name": "日漫"
+  },
+  {
+   "id": "/category/24",
+   "name": "美漫"
+  },
+  {
+   "id": "/category/25",
+   "name": "特摄"
+  },
+  {
+   "id": "/category/26",
+   "name": "日剧"
+  }
+ ],
+ "category": [
+  {
+   "op": "fetch",
+   "url": "{categoryId}"
+  },
+  {
+   "op": "searchList",
+   "selectors": [
+    "a.video-card"
+   ],
+   "titleSelector": ".video-card-title",
+   "titleAttr": "text",
+   "imageSelector": "img.poster-image",
+   "imageAttr": "src",
+   "descSelector": ".poster-status",
+   "detailPattern": "/video/"
   }
  ]
 }

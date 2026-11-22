@@ -74,14 +74,45 @@
  "home": [
   {
    "op": "fetch",
-   "url": "/"
+   "url": "/api/client/anime?page=1&pageSize=100&order=updatedAt"
   },
   {
-   "op": "searchList",
-   "selectors": [
-    "a.legacy-video-card"
-   ],
-   "detailPattern": "/anime/"
+   "op": "jsonSeries",
+   "listPath": "data.items",
+   "idKey": "slug",
+   "nameKey": "name",
+   "imageKey": "posterUrl",
+   "descKey": "category",
+   "detailUrlTemplate": "/anime/{id}"
+  }
+ ],
+ "categories": [
+  {
+   "id": "order=updatedAt",
+   "name": "最近更新"
+  },
+  {
+   "id": "order=hits",
+   "name": "最多播放"
+  },
+  {
+   "id": "order=score",
+   "name": "评分最高"
+  }
+ ],
+ "category": [
+  {
+   "op": "fetch",
+   "url": "/api/client/anime?page=1&pageSize=100&{categoryId}"
+  },
+  {
+   "op": "jsonSeries",
+   "listPath": "data.items",
+   "idKey": "slug",
+   "nameKey": "name",
+   "imageKey": "posterUrl",
+   "descKey": "category",
+   "detailUrlTemplate": "/anime/{id}"
   }
  ]
 }
