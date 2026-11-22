@@ -1,3 +1,4 @@
+import 'package:baka/core/app_logger.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -76,7 +77,7 @@ class _PlayerPageState extends State<PlayerPage>
     request: widget.request,
     posIndex: widget.posIndex,
   );
-  late final _tabs = TabController(length: 2, vsync: this);
+  late final TabController _tabs;
   final _party = Get.find<WatchPartyService>();
   final _mediaSession = Get.find<MediaSessionService>();
   final ctr = PlaybackController();
@@ -123,6 +124,7 @@ class _PlayerPageState extends State<PlayerPage>
   @override
   void initState() {
     super.initState();
+    _tabs = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addObserver(this);
     contentFilter.addListener(_onContentFilterChanged);
     _sourceSearch = VideoSourceSearchController.takeCachedFor(
@@ -201,7 +203,7 @@ class _PlayerPageState extends State<PlayerPage>
         seeked: seeked,
       );
     } catch (error) {
-      debugPrint('保存播放进度失败: $error');
+      Log.w('Player', '保存播放进度失败: $error');
     }
   }
 
@@ -240,7 +242,7 @@ class _PlayerPageState extends State<PlayerPage>
     _failure = null;
     late final VideoSourceSearchController search;
     search = VideoSourceSearchController(
-      seedData: _content.buildDetailData(),
+      seedData: _content.detailData,
       autoMatchMode: true,
       targetEpisodeIndex: _content.currPlayIndex,
       onMatchFound: (request) {
@@ -297,7 +299,7 @@ class _PlayerPageState extends State<PlayerPage>
     try {
       ready = await _content.prepareInitialPlayback();
     } catch (e) {
-      debugPrint('加载初始数据失败: $e');
+      Log.w('Player', '加载初始数据失败: $e');
       error = e;
     }
     if (_isStale(id)) return;
@@ -521,7 +523,7 @@ class _PlayerPageState extends State<PlayerPage>
       }
     } catch (error) {
       if (_isStale(id) || SourceOperation.current?.isCancelled == true) return;
-      debugPrint('打开视频失败: $error');
+      Log.w('Player', '打开视频失败: $error');
       _lastError = error;
       if (_opened) return;
       content.clearPrefetchedPlaybackMedia();
@@ -569,7 +571,7 @@ class _PlayerPageState extends State<PlayerPage>
           _castUrl.isNotEmpty &&
           _refreshedMediaKey != refreshKey) {
         _refreshedMediaKey = refreshKey;
-        (await content.prepareAdapterSource()).invalidateDownloadUrl(
+        (await content.prepareAdapterSource()).invalidatePlaybackMedia(
           content.currentEpisodeId,
         );
         content.clearPrefetchedPlaybackMedia();
@@ -601,9 +603,7 @@ class _PlayerPageState extends State<PlayerPage>
         content.stopAdapterPlaybackKeepAlive();
       }
 
-      final search = _sourceSearch ??= _newSourceSearch(
-        content.buildDetailData(),
-      );
+      final search = _sourceSearch ??= _newSourceSearch(content.detailData);
       if (search.results.isEmpty) await search.startSearch();
       while (mounted) {
         final next = await search.findNextPlayableCandidate(
@@ -625,7 +625,7 @@ class _PlayerPageState extends State<PlayerPage>
       showSnackBar('所有可用匹配源均播放失败，请点击源名称手动搜索选择', isError: true);
       _fail(_lastError ?? error);
     } catch (e) {
-      debugPrint('[PlayerPage] 自动换源失败: $e');
+      Log.w('Player', '自动换源失败: $e');
       _fail(e);
     } finally {
       _recovering = false;
@@ -740,7 +740,7 @@ class _PlayerPageState extends State<PlayerPage>
   Future<void> _openSourceSheet() async {
     final content = _content;
     if (content.isLocalSource) return;
-    final seedData = content.buildDetailData();
+    final seedData = content.detailData;
     final selection = await VideoSourceSearchSheet.show(
       context,
       seedData: seedData,
@@ -771,7 +771,7 @@ class _PlayerPageState extends State<PlayerPage>
       videoId: '${content.data['id']}',
       isFullScreen:
           _fullscreen && (downloadMode || !Instances.isDesktopPlatform),
-      postDetail: content.buildDetailData(),
+      postDetail: content.detailData,
       urlResolver: content.resolveEpisodeUrl,
       startInDownloadMode: downloadMode,
       currentLineIndex: downloadMode ? null : content.currUrl,
@@ -802,7 +802,7 @@ class _PlayerPageState extends State<PlayerPage>
       await _content.refreshCollection();
       if (mounted) _followed.value = _content.isFollow();
     } catch (error) {
-      debugPrint('读取追番状态失败: $error');
+      Log.w('Player', '读取追番状态失败: $error');
     }
   }
 
@@ -819,16 +819,13 @@ class _PlayerPageState extends State<PlayerPage>
     }
   }
 
-  void _onCommentLink(String text, String? url, String title) =>
-      handleCommentLinkTap(
-        text: text,
-        url: url,
-        title: title,
-        controller: ctr,
-        currentPlayIndex: _content.currPlayIndex,
-        videoList: _content.videoList,
-        onChangePlayIndex: _switchEpisode,
-      );
+  void _onCommentLink(String _, String? url, String _) => handleCommentLinkTap(
+    url,
+    controller: ctr,
+    currentIndex: _content.currPlayIndex,
+    episodeCount: _content.videoList.length,
+    onChangeEpisode: _switchEpisode,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -846,10 +843,10 @@ class _PlayerPageState extends State<PlayerPage>
         _failure == null) {
       return Instances.isTV
           ? TvAnimeDetailPlaceholder(
-              data: content.buildDetailData(),
+              data: content.detailData,
               episodes: content.videoList,
             )
-          : AnimeDetailPlaceholder(data: content.buildDetailData());
+          : AnimeDetailPlaceholder(data: content.detailData);
     }
     if (Instances.isTV) {
       return TvPlayerLayout(

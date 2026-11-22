@@ -1,3 +1,5 @@
+import 'package:baka/app/navigation.dart';
+import 'package:baka/core/app_logger.dart';
 import 'package:baka/core/content_filter.dart';
 import 'package:flutter/material.dart';
 
@@ -49,7 +51,7 @@ class _TvFavoritesPageState extends State<TvFavoritesPage> {
         });
       }
     } catch (e) {
-      debugPrint('加载追番列表错误: $e');
+      Log.w('TvFavorites', '加载追番列表错误: $e');
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -66,7 +68,7 @@ class _TvFavoritesPageState extends State<TvFavoritesPage> {
       'bgmImageUrl': item.bgmImage,
       'score': item.bgmRating,
     };
-    navigateToDetail(context, data);
+    NavigationService.toDetail(context, data);
   }
 
   @override

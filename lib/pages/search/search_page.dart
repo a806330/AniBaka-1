@@ -1,3 +1,4 @@
+import 'package:baka/core/app_logger.dart';
 import 'package:baka/core/content_filter.dart';
 import 'package:baka/source/models/source_search_result.dart';
 import 'package:baka/services/source/source_repository.dart';
@@ -320,9 +321,7 @@ class _SearchPageState extends State<SearchPage> {
   Future<void> _openSourceManagement() async {
     _debounce?.cancel();
     _searchService.invalidateSearch();
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const SourceManagementPage()),
-    );
+    await NavigationService.push<void>(context, const SourceManagementPage());
     if (!mounted) return;
 
     await _searchService.reloadCustomSources();
@@ -612,20 +611,13 @@ class _SearchPageState extends State<SearchPage> {
 
           if (source == 'bgm') {
             onTap = () {
-              final detailData = <String, dynamic>{
+              NavigationService.toDetail(context, {
                 'title': data['title'],
                 'bgmId': data['bgmId'],
-                '_heroTag': coverHeroTag(data),
                 if (data['bgmImageUrl'] != null)
                   'bgmImageUrl': data['bgmImageUrl'],
                 if (data['score'] != null) 'score': data['score'],
-              };
-              NavigationService.toDetail(
-                context,
-                detailData,
-                cardContext: context,
-                cardPreview: PostCard(data),
-              );
+              }, heroTag: coverHeroTag(data));
             };
           } else if (source != null && source.isNotEmpty) {
             onTap = () => _openSeries(data);
@@ -660,7 +652,7 @@ class _SearchPageState extends State<SearchPage> {
         ),
       );
     } catch (error) {
-      debugPrint('Error opening $source: $error');
+      Log.w('Search', 'Error opening $source: $error');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

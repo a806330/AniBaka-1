@@ -1,5 +1,6 @@
-import 'package:baka/app/watch_party_links.dart';
 import 'dart:io';
+
+import 'package:baka/app/watch_party_links.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:baka/instance.dart';
 import 'package:baka/core/app_logger.dart';
@@ -15,42 +16,20 @@ Future<void> configurePlatform() async {
 
   if (Platform.isAndroid) {
     const platformChannel = MethodChannel('baka/platform');
-    Map<String, dynamic>? displayDiagnostics;
     try {
       Instances.isTV =
           await platformChannel.invokeMethod<bool>('isTV') ?? false;
     } catch (error, stackTrace) {
       Instances.isTV = false;
-      AppLogger.instance.warning(
+      Log.w(
+        'Display',
         'Android TV detection failed; using phone behavior',
-        tag: 'Display',
-        error: error,
-        stackTrace: stackTrace,
-      );
-    }
-
-    try {
-      displayDiagnostics = await platformChannel
-          .invokeMapMethod<String, dynamic>('getDisplayDiagnostics');
-      AppLogger.instance.info(
-        'Android display diagnostics: $displayDiagnostics',
-        tag: 'Display',
-      );
-    } catch (error, stackTrace) {
-      AppLogger.instance.warning(
-        'Unable to read Android display diagnostics',
-        tag: 'Display',
-        error: error,
-        stackTrace: stackTrace,
+        error,
+        stackTrace,
       );
     }
 
     if (Instances.isTV) {
-      AppLogger.instance.info(
-        'TV rendering policy: system display mode, '
-        'impeller=${displayDiagnostics?['impellerEnabled']}',
-        tag: 'Display',
-      );
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
       SystemChrome.setPreferredOrientations(const [
         DeviceOrientation.landscapeLeft,
@@ -62,16 +41,16 @@ Future<void> configurePlatform() async {
       // alternate frames on TV firmware with incomplete mode support.
       try {
         await FlutterDisplayMode.setHighRefreshRate();
-        AppLogger.instance.info(
+        Log.i(
+          'Display',
           'Android rendering policy: high refresh mode request completed',
-          tag: 'Display',
         );
       } catch (error, stackTrace) {
-        AppLogger.instance.warning(
+        Log.w(
+          'Display',
           'Android high refresh mode request failed',
-          tag: 'Display',
-          error: error,
-          stackTrace: stackTrace,
+          error,
+          stackTrace,
         );
       }
     }

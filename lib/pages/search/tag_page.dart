@@ -1,9 +1,10 @@
+import 'package:baka/core/app_logger.dart';
 import 'package:baka/core/content_filter.dart';
 import 'package:baka/models/bgm.dart';
 import 'package:baka/models/playback_request.dart';
 import 'package:baka/api/bgm.dart';
 import 'package:baka/api/post.dart';
-import 'package:baka/pages/player/player_page.dart';
+import 'package:baka/app/navigation.dart';
 import 'package:baka/widgets/anime/post_card.dart';
 import 'package:baka/widgets/common/refresh.dart';
 import 'package:flutter/material.dart';
@@ -56,7 +57,7 @@ class _TagPageState extends State<TagPage> {
       }
       return _hasMore;
     } catch (e) {
-      debugPrint('Error getting tag list: $e');
+      Log.w('Search', 'Error getting tag list: $e');
       return false;
     }
   }
@@ -75,20 +76,16 @@ class _TagPageState extends State<TagPage> {
     super.dispose();
   }
 
-  void _openBgmSubject(Map data) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => PlayerPage(
-          request: PlaybackRequest.fromMap(<String, dynamic>{
-            'title': data['title'],
-            'bgmId': data['bgmId'],
-            if (data['bgmImageUrl'] != null) 'bgmImageUrl': data['bgmImageUrl'],
-            if (data['score'] != null) 'score': data['score'],
-          }),
-        ),
-      ),
-    );
-  }
+  void _openBgmSubject(Map data) => NavigationService.toPlayback(
+    context,
+    PlaybackRequest.fromMap(<String, dynamic>{
+      'title': data['title'],
+      'bgmId': data['bgmId'],
+      if (data['bgmImageUrl'] != null) 'bgmImageUrl': data['bgmImageUrl'],
+      if (data['score'] != null) 'score': data['score'],
+    }),
+    autoMatch: false,
+  );
 
   @override
   Widget build(BuildContext context) {

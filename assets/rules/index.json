@@ -6,7 +6,7 @@
       "key": "2kdm",
       "title": "MuteFun动漫 (2kdm)",
       "by": "auto-generator",
-      "rev": 5,
+      "rev": 6,
       "intro": "MuteFun动漫网站-无声乐趣，提供日漫、美漫、特摄、日剧等高清在线观看。",
       "site": "https://www.2kdm.com/",
       "badge": "https://image1.ljcdn.com/materials/cmsapi/1a5b58f50c23e5475dc6a8bb827035e2.png",
@@ -17,13 +17,13 @@
       ],
       "ref": "2kdm.json",
       "engine": "anx-rule/2",
-      "sha256": "4f3d73fe6eab4c71ecc1db33017ccd8eec33278fba160f0b64c1e6cf0e0ceb30"
+      "sha256": "a189590ff2bcf38511531c8434106d30a09ee2b93d75aaab2108e8734d1b5eba"
     },
     {
       "key": "7sefun",
       "title": "七色番",
       "by": "anibaka",
-      "rev": 8,
+      "rev": 9,
       "intro": "七色番提供最新番剧TV、剧场版在线高速播放，每日及时更新，是动漫迷的不二选择！",
       "site": "https://www.7sefun.top/",
       "badge": "https://www.7sefun.top/pc/img/favicon.ico",
@@ -34,16 +34,16 @@
       ],
       "ref": "7sefun.json",
       "engine": "anx-rule/2",
-      "sha256": "7e496a6ea600c063e0b36d17288699799ab00f26411476ba8171c9a949f02dbf"
+      "sha256": "2b9a79d9bfffa386e8804c3095433a577c8a43f92741964889be57a41f585330"
     },
     {
       "key": "akianime",
       "title": "AkiAnime",
       "by": "anibaka",
-      "rev": 6,
-      "intro": "萌番 AkiAnime 动漫源，源网址 https://www.akianime.cc/",
-      "site": "https://www.akianime.cc/",
-      "badge": "https://www.akianime.cc/template/dsn2/static/img/ico.png",
+      "rev": 8,
+      "intro": "萌番 AkiAnime 动漫源，源网址 https://www.akianime.com/",
+      "site": "https://www.akianime.com/",
+      "badge": "https://www.akianime.com/template/dsn2/static/img/ico.png",
       "labels": [
         "anime",
         "无广告",
@@ -51,14 +51,14 @@
       ],
       "ref": "akianime.json",
       "engine": "anx-rule/2",
-      "sha256": "8d832887021dc064d00c89f19f31fcbfa760d6ad0cae56ea53c6d0fec3112e29"
+      "sha256": "d0c50f9a83da3a0d5c3bdc50fa0fae0124bbd2e689e1031c13811fb65fd92073"
     },
     {
       "key": "dm84",
       "title": "DM84",
       "by": "anibaka",
-      "rev": 2,
-      "intro": "DM84 动漫视频源，源网站 dm84.net（当前入口 dmbus.cc）。",
+      "rev": 3,
+      "intro": "DM84 动漫视频源。",
       "site": "https://dmbus.cc/",
       "badge": "https://dmbus.cc/favicon.ico",
       "labels": [
@@ -68,7 +68,7 @@
       ],
       "ref": "dm84.json",
       "engine": "anx-rule/2",
-      "sha256": "0788c08fd443a7d8022bca850f3dc20f618f7b547ce8a65f6cb3b48892a766a1"
+      "sha256": "f343f14ec4ec3ab261832055d4a289f4bdf148f7f0d2458e685c3bc037d311a1"
     },
     {
       "key": "fsdm02",
@@ -91,7 +91,7 @@
       "key": "girigirilove",
       "title": "GirigiriLove",
       "by": "anibaka",
-      "rev": 5,
+      "rev": 6,
       "intro": "GirigiriLove动漫视频源，源网址ani.girigirilove.com",
       "site": "https://ani.girigirilove.com/",
       "badge": "https://ani.girigirilove.com/upload/anime.girigirilove.com_.png",
@@ -102,7 +102,7 @@
       ],
       "ref": "girigirilove.json",
       "engine": "anx-rule/2",
-      "sha256": "5fe19b18276b8f2be1933a2d38a046386c11bc69c3d9649a8b02db764d263ef6"
+      "sha256": "8b0dc194cb5be62e3db324d3f621da8a68cfe63dad014247d798eaa139217b0a"
     },
     {
       "key": "girigirilove_beta",
@@ -124,7 +124,7 @@
       "key": "ios_mifun",
       "title": "MiFun",
       "by": "auto-generator",
-      "rev": 7,
+      "rev": 9,
       "intro": "MiFun在线动漫专注于资源收集整理，海量有效的高质量动漫资源在线观看，完全免费。",
       "site": "https://ios.mifun.org/",
       "badge": "https://ugc.hitv.com/1/230324151010E2CA349174CE432E9353E29DE5C0EQ0NF/sVoWeL0.png?mxtheme/images/favicon.png",
@@ -135,13 +135,13 @@
       ],
       "ref": "ios_mifun.json",
       "engine": "anx-rule/2",
-      "sha256": "7715478e1bce61c3f7e33bdb6e7bcdd1bca81cdb74789a93ee6ec6e67b214bcd"
+      "sha256": "7cf5bba60a26873ca717777957952d09d47570381a10846151240f91d610c4b4"
     },
     {
       "key": "lm6",
       "title": "路漫漫动漫",
       "by": "anibaka",
-      "rev": 5,
+      "rev": 6,
       "intro": "路漫漫在线动漫提供日本动漫、国产动漫、动画电影等免费在线观看。",
       "site": "https://m.lm6.net/",
       "badge": "https://m.lm6.net/template/jable/statics/icon/favicon-32x32.png",
@@ -152,13 +152,13 @@
       ],
       "ref": "lm6.json",
       "engine": "anx-rule/2",
-      "sha256": "2cc3e54935af2adb97f2dea282c98112e05733198df597b472f39bee1160b343"
+      "sha256": "615b134883aa17927cf6f1fbdc1ed289e1b0fc9461c50ba56bab91a8988d4190"
     },
     {
       "key": "mgnacg",
       "title": "Mgnacg 橘子动漫",
       "by": "anibaka",
-      "rev": 1,
+      "rev": 2,
       "intro": "Mgnacg 橘子动漫视频源",
       "site": "https://www.mgnacg.com/",
       "badge": "https://r2img.nanoacg.com/favicon.png",
@@ -169,13 +169,13 @@
       ],
       "ref": "mgnacg.json",
       "engine": "anx-rule/2",
-      "sha256": "6d048ece8fa408f1343f4aa6b5d9495ebe9628d0ac245bb2ab4ca178ddc37182"
+      "sha256": "67edef90675fcefa75f2edfa53d7393f12a0c7736f0f3e89e3f9d8e6170dc958"
     },
     {
       "key": "moonci",
       "title": "Moonci",
       "by": "anibaka",
-      "rev": 3,
+      "rev": 5,
       "intro": "Moonci 动漫视频源。",
       "site": "https://www.moonci.com/",
       "badge": "https://www.moonci.com/favicon.ico",
@@ -186,20 +186,23 @@
       ],
       "ref": "moonci.json",
       "engine": "anx-rule/2",
-      "sha256": "f454f5dafce4ce26548f8d8bb7dfb1ea7bb246b0d02d965ce42f71c9200ee766"
+      "sha256": "4b752182ae9a50baa7fa5f2523ed14b67e69b27f779a4358097806ded0c555f4"
     },
     {
       "key": "silisili",
       "title": "嘶哩嘶哩",
-      "rev": 0,
+      "rev": 2,
       "ref": "silisili.json",
-      "sha256": "7cb69dbcb4c9f7d33711d6945a39c65320b9c46f07d20967a5ffcb589b756a02"
+      "sha256": "e7b5e3900e604c04720da8da0e67b1a81d12581a43a10477a6c4afce844f3c97",
+      "site": "https://www.silisilifun.com/",
+      "badge": "https://www.silisilifun.com/favicon.ico?20190911",
+      "intro": "嘶哩嘶哩动漫源。保留站点访问会话 Cookie，优先通过本站播放接口解密直链，WebView 作为后备。"
     },
     {
       "key": "tvtfun",
       "title": "TvTFun",
       "by": "anibaka",
-      "rev": 12,
+      "rev": 13,
       "intro": "TvTFun 动漫视频源。",
       "site": "https://www.tvtfun.net/",
       "badge": "https://www.tvtfun.net/favicon-32x32.png",
@@ -210,7 +213,7 @@
       ],
       "ref": "tvtfun.json",
       "engine": "anx-rule/2",
-      "sha256": "e08fc606eadceb4fc9dcafd7104b4c3d8fd76cf938c9c0f0affca02d8bbe721a"
+      "sha256": "5f01c4e0a6703910b542390d0850805b8ede1a258e12748eb29ff2b9b133d9e2"
     },
     {
       "key": "xifanacg",

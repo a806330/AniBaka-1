@@ -120,7 +120,7 @@ class _Player extends PlaybackController {
     if (!seeking.isCompleted) seeking.complete();
     await seekGate?.future;
     if (failSeek) throw StateError('test seek failed');
-    await super.seek(target, remote: remote, fromSlider: fromSlider);
+    await super.seek(target, remote: remote);
   }
 }
 
@@ -333,8 +333,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       party = Party(AccountSession(prefs, refreshTokens: (_) async => null));
       stream = StreamController<Uri>(sync: true);
-      links = WatchPartyLinks(party, incoming: stream.stream)
-        ..initializeLinks();
+      links = WatchPartyLinks(party, incoming: stream.stream);
     });
     tearDown(() async {
       await links.close();

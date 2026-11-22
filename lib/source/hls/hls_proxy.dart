@@ -1,3 +1,4 @@
+import 'package:baka/core/app_logger.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -193,9 +194,13 @@ class HlsProxy {
       response.statusCode = remote.statusCode ?? HttpStatus.badGateway;
       for (final name in _forwardedResponseHeaders) {
         if (strip && _offsetHeaders.contains(name)) continue;
-        final value = remote.headers.value(name);
-        if (value != null && value.isNotEmpty) {
-          response.headers.set(name, value);
+        final values = remote.headers[name];
+        if (values == null || values.isEmpty) continue;
+        // Cache-Control can repeat. Omit ambiguous single-value headers.
+        if (name == HttpHeaders.cacheControlHeader) {
+          response.headers.set(name, values);
+        } else if (values.length == 1 && values.single.isNotEmpty) {
+          response.headers.set(name, values.single);
         }
       }
       final stream = remote.data?.stream;
@@ -216,7 +221,7 @@ class HlsProxy {
       try {
         await response.close();
       } catch (_) {}
-      debugPrint('HLS proxy request failed: $error');
+      Log.w('Hls', 'HLS proxy request failed: $error');
     }
   }
 

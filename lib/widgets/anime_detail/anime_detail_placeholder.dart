@@ -1,3 +1,4 @@
+import 'package:baka/core/app_logger.dart';
 import 'package:baka/core/content_filter.dart';
 import 'package:baka/models/bgm.dart';
 import 'package:baka/utils/json_values.dart';
@@ -13,6 +14,7 @@ import 'package:baka/models/playback_request.dart';
 import 'package:baka/services/collection/collection_repository.dart';
 import 'package:baka/utils/toast_utils.dart';
 import 'package:baka/app/navigation.dart';
+import 'package:baka/app/page_routes.dart';
 
 import 'dart:async';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -26,9 +28,21 @@ import 'package:baka/widgets/anime_detail/anime_detail_comments.dart';
 import 'package:baka/widgets/anime_detail/anime_detail_related.dart';
 
 class AnimeDetailPlaceholder extends StatefulWidget {
-  final Map<String, dynamic> data;
+  /// The item that opened the page; read only, never copied.
+  final Map data;
 
-  const AnimeDetailPlaceholder({required this.data, super.key});
+  /// The desktop cover flight's tag; defaults to the card's own.
+  final Object? heroTag;
+
+  /// The episode playback starts from, when the card remembers one.
+  final int? episodeIndex;
+
+  const AnimeDetailPlaceholder({
+    required this.data,
+    this.heroTag,
+    this.episodeIndex,
+    super.key,
+  });
 
   @override
   State<AnimeDetailPlaceholder> createState() => _AnimeDetailPlaceholderState();
@@ -44,20 +58,19 @@ class _AnimeDetailPlaceholderState extends State<AnimeDetailPlaceholder> {
   late BgmInfo _bgmInfo;
   Map<String, dynamic>? _detailData;
   Map<String, dynamic>? _anibakaData;
-  late AnimeDetailViewData _detail;
+  AnimeDetailViewData? _cachedDetail;
 
   int? get _subjectId => _bgmInfo.subjectId;
   int? get _postId => toInt(widget.data['id']);
   int? get _validPostId => AnimeCollection.postIdFrom(widget.data);
 
-  void _rebuildDetail() {
-    _detail = AnimeDetailViewData.from(
-      source: widget.data,
-      bgmInfo: _bgmInfo,
-      anibaka: _anibakaData,
-      bgm: _detailData,
-    );
-  }
+  AnimeDetailViewData get _detail => _cachedDetail ??= AnimeDetailViewData.from(
+    source: widget.data,
+    bgmInfo: _bgmInfo,
+    anibaka: _anibakaData,
+    bgm: _detailData,
+    heroTag: widget.heroTag,
+  );
 
   @override
   void initState() {
@@ -86,7 +99,7 @@ class _AnimeDetailPlaceholderState extends State<AnimeDetailPlaceholder> {
         (widget.data['bgmDetailData'] as Map<String, dynamic>?) ??
         (subjectId == null ? null : peekBgmSubject(subjectId));
     _bgmInfo = bgmInfo;
-    _rebuildDetail();
+    _cachedDetail = null;
 
     unawaited(_loadInitialData(_loadGeneration));
   }
@@ -98,72 +111,60 @@ class _AnimeDetailPlaceholderState extends State<AnimeDetailPlaceholder> {
   }
 
   void _startWatching() {
-    NavigationService.toPlayback(
-      context,
-      PlaybackRequest.fromMap(
-        widget.data,
-        metadataUpdates: {
-          if (_subjectId != null) 'bgmId': _subjectId,
-          if (_bgmInfo.score != null) 'score': _bgmInfo.score,
-          if (_bgmInfo.imageUrl != null) 'bgmImageUrl': _bgmInfo.imageUrl,
-          if (_detailData != null) 'bgmDetailData': _detailData,
-          if (_detail.logoUrl.isNotEmpty) 'logoUrl': _detail.logoUrl,
-        },
-      ),
+    final request = PlaybackRequest.fromMap(
+      widget.data,
+      metadataUpdates: {
+        if (_subjectId != null) 'bgmId': _subjectId,
+        if (_bgmInfo.score != null) 'score': _bgmInfo.score,
+        if (_bgmInfo.imageUrl != null) 'bgmImageUrl': _bgmInfo.imageUrl,
+        if (_detailData != null) 'bgmDetailData': _detailData,
+        if (_detail.logoUrl.isNotEmpty) 'logoUrl': _detail.logoUrl,
+      },
     );
+    if (widget.episodeIndex case final index?) request.episodeIndex = index;
+    NavigationService.toPlayback(context, request);
+  }
+
+  /// Defer rebuilding details until the opening motion settles.
+  Future<void> _apply(int generation, VoidCallback update) async {
+    if (!mounted || generation != _loadGeneration) return;
+    await pageSettled(context);
+    if (!mounted || generation != _loadGeneration) return;
+    setState(() {
+      update();
+      _cachedDetail = null;
+    });
   }
 
   Future<void> _loadInitialData(int generation) async {
-    var resolved = _bgmInfo;
     final collectionRevision = _collectionRevision;
-    if (_subjectId == null) {
+    var bgmId = _subjectId;
+    if (bgmId == null) {
       try {
-        resolved = await resolveBgmFromData(widget.data);
+        final resolved = await resolveBgmFromData(widget.data);
         if (!mounted || generation != _loadGeneration) return;
-        setState(() {
-          _bgmInfo = resolved;
-          _rebuildDetail();
-        });
+        bgmId = resolved.subjectId;
+        unawaited(_apply(generation, () => _bgmInfo = resolved));
       } catch (e) {
-        debugPrint('解析bgmId失败: $e');
+        Log.w('Detail', '解析bgmId失败: $e');
       }
     }
-
-    if (!mounted || generation != _loadGeneration) return;
-    final bgmId = resolved.subjectId;
     if (bgmId == null) return;
 
     if (_anibakaData == null) {
       unawaited(
-        AniBakaApi.getAnimeDetail(bgmId)
-            .then((data) {
-              if (!mounted || generation != _loadGeneration || data == null) {
-                return;
-              }
-              setState(() {
-                _anibakaData = data;
-                _rebuildDetail();
-              });
-            })
-            .catchError((Object e) {
-              debugPrint('获取 AniBaka 详情失败: $e');
-            }),
+        AniBakaApi.getAnimeDetail(bgmId).then((data) async {
+          if (data != null) await _apply(generation, () => _anibakaData = data);
+        }, onError: (Object e) => Log.w('Detail', '获取 AniBaka 详情失败: $e')),
       );
     }
 
     if (_detailData == null) {
       unawaited(
-        getBgmSubject(bgmId)
-            .then((data) {
-              if (!mounted || generation != _loadGeneration) return;
-              setState(() {
-                _detailData = data;
-                _rebuildDetail();
-              });
-            })
-            .catchError((Object e) {
-              debugPrint('获取 BGM 条目失败: $e');
-            }),
+        getBgmSubject(bgmId).then(
+          (data) => _apply(generation, () => _detailData = data),
+          onError: (Object e) => Log.w('Detail', '获取 BGM 条目失败: $e'),
+        ),
       );
     }
 
@@ -179,7 +180,7 @@ class _AnimeDetailPlaceholderState extends State<AnimeDetailPlaceholder> {
             _collection.value = collection;
           })
           .catchError((Object e) {
-            debugPrint('获取收藏状态失败: $e');
+            Log.w('Detail', '获取收藏状态失败: $e');
           }),
     );
   }
@@ -230,7 +231,7 @@ class _AnimeDetailPlaceholderState extends State<AnimeDetailPlaceholder> {
       if (removing) {
         showSnackBar(e.toString(), isError: true);
       } else {
-        debugPrint('更新收藏状态失败: $e');
+        Log.w('Detail', '更新收藏状态失败: $e');
         showSnackBar('操作失败: $e');
       }
     } finally {
@@ -556,8 +557,10 @@ class _AnimeDetailPlaceholderState extends State<AnimeDetailPlaceholder> {
         (_) => _wrapTabContent(
           AnimeDetailRelatedSection(
             subjectId: subjectId,
-            onAnimeTap: (data) =>
-                NavigationService.toPlayer(context, data, fade: true),
+            onAnimeTap: (data) => NavigationService.toPlayback(
+              context,
+              PlaybackRequest.fromMap(data),
+            ),
           ),
         ),
       ));
@@ -859,7 +862,7 @@ class _AnimeDetailPlaceholderState extends State<AnimeDetailPlaceholder> {
       links.add(('IMDb', 'https://www.imdb.com/title/$formattedImdb/'));
     }
 
-    if (tmdbId != null && tmdbId.isNotEmpty) {
+    if (tmdbId != null && tmdbId > 0) {
       links.add(('TMDB', 'https://www.themoviedb.org/tv/$tmdbId'));
     }
 

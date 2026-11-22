@@ -1,6 +1,7 @@
+import 'package:baka/app/page_routes.dart';
+import 'package:baka/core/app_logger.dart';
 import 'package:baka/core/content_filter.dart';
 import 'package:baka/models/bgm.dart';
-import 'package:baka/utils/json_values.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,9 +24,13 @@ class TvAnimeDetailPlaceholder extends StatefulWidget {
   final Map data;
   final List<PlaybackEpisode>? episodes;
 
+  /// The episode playback starts from, when the card remembers one.
+  final int? episodeIndex;
+
   const TvAnimeDetailPlaceholder({
     required this.data,
     this.episodes,
+    this.episodeIndex,
     super.key,
   });
 
@@ -46,16 +51,20 @@ class _TvAnimeDetailPlaceholderState extends State<TvAnimeDetailPlaceholder> {
   int? get _subjectId => _bgmInfo.subjectId;
 
   // Enrich only at the navigation boundary; rendering shares the input data.
-  PlaybackRequest get _playbackRequest => PlaybackRequest.fromMap(
-    widget.data,
-    metadataUpdates: {
-      'nsfw': _detail.nsfw,
-      if (_subjectId != null) 'bgmId': _subjectId,
-      if (_bgmInfo.score != null) 'score': _bgmInfo.score,
-      if (_bgmInfo.imageUrl != null) 'bgmImageUrl': _bgmInfo.imageUrl,
-      if (_detail.logoUrl.isNotEmpty) 'logoUrl': _detail.logoUrl,
-    },
-  );
+  PlaybackRequest get _playbackRequest {
+    final request = PlaybackRequest.fromMap(
+      widget.data,
+      metadataUpdates: {
+        'nsfw': _detail.nsfw,
+        if (_subjectId != null) 'bgmId': _subjectId,
+        if (_bgmInfo.score != null) 'score': _bgmInfo.score,
+        if (_bgmInfo.imageUrl != null) 'bgmImageUrl': _bgmInfo.imageUrl,
+        if (_detail.logoUrl.isNotEmpty) 'logoUrl': _detail.logoUrl,
+      },
+    );
+    if (widget.episodeIndex case final index?) request.episodeIndex = index;
+    return request;
+  }
 
   int? get _validPostId => AnimeCollection.postIdFrom(widget.data);
 
@@ -88,7 +97,7 @@ class _TvAnimeDetailPlaceholderState extends State<TvAnimeDetailPlaceholder> {
       final (bgm, anibaka, episodes) = await (
         getBgmSubject(subjectId),
         AniBakaApi.getAnimeDetail(subjectId).catchError((Object error) {
-          debugPrint('获取 AniBaka 详情失败: $error');
+          Log.w('TvDetail', '获取 AniBaka 详情失败: $error');
           return null;
         }),
         _videoList.isEmpty
@@ -113,9 +122,10 @@ class _TvAnimeDetailPlaceholderState extends State<TvAnimeDetailPlaceholder> {
             ),
         ];
       }
-      setState(() => _detail = detail);
+      await pageSettled(context);
+      if (mounted) setState(() => _detail = detail);
     } catch (e) {
-      debugPrint('获取番剧数据失败: $e');
+      Log.w('TvDetail', '获取番剧数据失败: $e');
     }
   }
 
@@ -134,7 +144,7 @@ class _TvAnimeDetailPlaceholderState extends State<TvAnimeDetailPlaceholder> {
         }
       }
     } catch (e) {
-      debugPrint('获取收藏状态失败: $e');
+      Log.w('TvDetail', '获取收藏状态失败: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -167,7 +177,7 @@ class _TvAnimeDetailPlaceholderState extends State<TvAnimeDetailPlaceholder> {
         showSnackBar('已标记为「${status.label}」');
       }
     } catch (e) {
-      debugPrint('更新收藏失败: $e');
+      Log.w('TvDetail', '更新收藏失败: $e');
       if (mounted) showSnackBar(e.toString(), isError: true);
     }
   }
@@ -485,7 +495,7 @@ class _TvAnimeDetailPlaceholderState extends State<TvAnimeDetailPlaceholder> {
                     currentIndex: 0,
                     currUrl: 1,
                     bgmId: _subjectId ?? _detail.bgmId,
-                    tmdbId: toInt(_detail.tmdbId),
+                    tmdbId: _detail.tmdbId,
                     tvdbId: _detail.tvdbId,
                     onEpisodeSelected: (index) {
                       setState(() {

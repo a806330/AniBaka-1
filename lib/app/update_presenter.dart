@@ -1,57 +1,30 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:baka/api/post.dart';
 import 'package:baka/core/api_transport.dart';
-import 'package:baka/core/content_visibility.dart';
+import 'package:baka/core/app_logger.dart';
+import 'package:baka/core/content_filter.dart';
 import 'package:baka/instance.dart';
 import 'package:baka/models/update_info.dart';
 import 'package:baka/widgets/dialog/update_dialog.dart';
-import 'package:flutter/foundation.dart';
 
 const _kAnnouncementContentKey = 'last_announcement_content';
 
-/// 按语义化版本比较，remote 比 local 新时返回 true。
-bool _isVersionNewer(String remoteVersion, String localVersion) {
-  var remoteOffset = 0;
-  var localOffset = 0;
-  while (remoteOffset < remoteVersion.length ||
-      localOffset < localVersion.length) {
-    final remoteEnd = remoteVersion.indexOf('.', remoteOffset);
-    final localEnd = localVersion.indexOf('.', localOffset);
-    final r =
-        int.tryParse(
-          remoteVersion.substring(
-            remoteOffset,
-            remoteEnd < 0 ? remoteVersion.length : remoteEnd,
-          ),
-        ) ??
-        0;
-    final l =
-        int.tryParse(
-          localVersion.substring(
-            localOffset,
-            localEnd < 0 ? localVersion.length : localEnd,
-          ),
-        ) ??
-        0;
-    if (r > l) return true;
-    if (r < l) return false;
-    remoteOffset = remoteEnd < 0 ? remoteVersion.length : remoteEnd + 1;
-    localOffset = localEnd < 0 ? localVersion.length : localEnd + 1;
+bool _isVersionNewer(String remote, String local) {
+  if (remote == local) return false;
+  final latest = remote.split('.');
+  final installed = local.split('.');
+  for (var i = 0; i < math.max(latest.length, installed.length); i++) {
+    final r = i < latest.length ? int.tryParse(latest[i]) ?? 0 : 0;
+    final l = i < installed.length ? int.tryParse(installed[i]) ?? 0 : 0;
+    if (r != l) return r > l;
   }
   return false;
 }
 
-class VersionService {
+abstract final class VersionService {
   static Future<void>? _checkTask;
-
-  static String get _currentPlatform {
-    if (Platform.isAndroid) return 'android';
-    if (Platform.isIOS) return 'ios';
-    if (Platform.isWindows) return 'windows';
-    if (Platform.isMacOS) return 'macos';
-    return 'unknown';
-  }
 
   static Future<UpdateInfo> checkUpdateInfo() async {
     final appInfo = await apiTransport.getJson<Map<String, dynamic>>(
@@ -61,12 +34,11 @@ class VersionService {
 
     final appUpdate = appInfo['app_update'] as Map<String, dynamic>;
     final platforms = appUpdate['platforms'] as Map<String, dynamic>;
-    final platformConfig = platforms[_currentPlatform] as Map<String, dynamic>?;
+    final platformConfig =
+        platforms[Platform.operatingSystem] as Map<String, dynamic>?;
     if (platformConfig == null) {
       return UpdateInfo(
         hasUpdate: false,
-        forceUpdate: false,
-        changelog: '',
         downloadUrl: '',
         latestVersion: localVersion,
       );
@@ -82,39 +54,35 @@ class VersionService {
     );
   }
 
-  static Future<void> checkAndShowUpdate() => _checkTask ??=
-      _checkAndShowUpdate().whenComplete(() => _checkTask = null);
+  static Future<void> checkAndShowUpdate([UpdateInfo? info]) => _checkTask ??=
+      _checkAndShowUpdate(info).whenComplete(() => _checkTask = null);
 
-  static Future<void> _checkAndShowUpdate() async {
-    UpdateInfo? updateInfo;
+  static Future<void> _checkAndShowUpdate(UpdateInfo? updateInfo) async {
     try {
-      updateInfo = await checkUpdateInfo();
+      updateInfo ??= await checkUpdateInfo();
     } catch (e) {
-      debugPrint('版本检查失败: $e');
+      Log.w('Update', '版本检查失败: $e');
     }
 
-    String announcementContent = '';
+    final cached = Instances.sp.getString(_kAnnouncementContentKey) ?? '';
+    var announcementContent = cached;
     try {
       final announcement = await getPostDetail(1);
       announcementContent = announcement['content'] as String? ?? '';
-      await Instances.sp.setString(
-        _kAnnouncementContentKey,
-        announcementContent,
-      );
+      if (announcementContent != cached) {
+        await Instances.sp.setString(
+          _kAnnouncementContentKey,
+          announcementContent,
+        );
+      }
     } catch (e) {
-      debugPrint('公告获取失败: $e');
-      announcementContent =
-          Instances.sp.getString(_kAnnouncementContentKey) ?? '';
+      Log.w('Update', '公告获取失败: $e');
     }
 
     final hasUpdate = updateInfo?.hasUpdate ?? false;
     final forceUpdate = updateInfo?.forceUpdate ?? false;
     final announcementId = 'announcement_$host';
-    if (contentVisibility.isDismissed(
-      Instances.sp,
-      id: announcementId,
-      content: announcementContent,
-    )) {
+    if (contentVisibility.isDismissed(announcementId, announcementContent)) {
       announcementContent = '';
     }
 
@@ -129,11 +97,7 @@ class VersionService {
           UpdateInfo(hasUpdate: false, latestVersion: Instances.appVersion),
     );
     if (shown && announcementContent.isNotEmpty) {
-      await contentVisibility.dismiss(
-        Instances.sp,
-        id: announcementId,
-        content: announcementContent,
-      );
+      await contentVisibility.dismiss(announcementId, announcementContent);
     }
   }
 }

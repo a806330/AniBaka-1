@@ -1,5 +1,7 @@
+import 'package:baka/app/navigation.dart';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart' hide ContextExtensionss;
 import 'package:open_filex/open_filex.dart';
@@ -84,7 +86,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
   }
 
   Future<void> _exportLogs() => _run('导出日志', () async {
-    final archive = await AppLogger.instance.exportLogs();
+    final archive = await Log.exportLogs();
     if (archive == null) return;
     showSnackBar(
       '日志已导出：${archive.fileName}',
@@ -102,6 +104,22 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
     } else {
       showSnackBar('已是最新版本');
     }
+  });
+
+  Future<void> _importFont() => _run('导入字体', () async {
+    final result = await FilePicker.pickFiles(
+      type: Platform.isAndroid ? FileType.any : FileType.custom,
+      allowedExtensions: Platform.isAndroid ? null : const ['ttf', 'otf'],
+      lockParentWindow: true,
+    );
+    if (result == null) return;
+    final selected = result.files.single;
+    final path = selected.path;
+    final extension = selected.extension?.toLowerCase();
+    if (path == null || (extension != 'ttf' && extension != 'otf')) {
+      throw const FormatException('请选择 TTF 或 OTF 字体文件');
+    }
+    _appState.setFontFamily(await AppFonts.importFont(File(path)));
   });
 
   Future<void> _editUser(String title, String field) async {
@@ -147,9 +165,6 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
     showSnackBar('已切换至 ${_session.currentHost}，重启生效');
   }
 
-  Future<void> _push(Widget page) =>
-      Navigator.push(context, MaterialPageRoute<void>(builder: (_) => page));
-
   @override
   Widget build(BuildContext context) {
     return SettingsPage(
@@ -186,22 +201,28 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                   value: user.recoveryEmail.isNotEmpty
                       ? user.recoveryEmail
                       : '修改密码 · 可选绑定邮箱',
-                  onTap: () => _push(const AccountSecurityPage()),
+                  onTap: () => NavigationService.push<void>(
+                    context,
+                    const AccountSecurityPage(),
+                  ),
                 ),
               ] else
                 SettingsTile(
                   icon: Icons.account_circle_outlined,
                   title: 'AniBaka 账号',
                   value: '未登录',
-                  onTap: () => Navigator.pushNamed(context, 'Baka://login'),
+                  onTap: () => NavigationService.toLogin(context),
                 ),
               SettingsTile(
                 icon: Icons.sync_alt_rounded,
                 title: 'Bangumi 同步',
                 value: bangumiSession.account?.nickname ?? '未关联',
                 onTap: () async {
-                  await _push(const BangumiSyncPage());
-                  _session.refreshView();
+                  await NavigationService.push<void>(
+                    context,
+                    const BangumiSyncPage(),
+                  );
+                  _session.user.refresh();
                 },
               ),
               if (loggedIn)
@@ -220,7 +241,10 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
             SettingsTile(
               icon: Icons.play_circle_outline_rounded,
               title: '播放设置',
-              onTap: () => _push(const PlaybackSettingsPage()),
+              onTap: () => NavigationService.push<void>(
+                context,
+                const PlaybackSettingsPage(),
+              ),
             ),
             ListenableBuilder(
               listenable: ruleRepository,
@@ -230,19 +254,28 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                 value: ruleRepository.updateCount > 0
                     ? '${ruleRepository.updateCount} 个更新'
                     : null,
-                onTap: () => _push(const SourceManagementPage()),
+                onTap: () => NavigationService.push<void>(
+                  context,
+                  const SourceManagementPage(),
+                ),
               ),
             ),
             SettingsTile(
               icon: Icons.auto_awesome_outlined,
               title: 'AI 规则编写',
-              onTap: () => _push(const AiRuleSettingsPage()),
+              onTap: () => NavigationService.push<void>(
+                context,
+                const AiRuleSettingsPage(),
+              ),
             ),
             if (Platform.isWindows)
               SettingsTile(
                 icon: Icons.science_outlined,
                 title: '实验室',
-                onTap: () => _push(const LabsSettingsPage()),
+                onTap: () => NavigationService.push<void>(
+                  context,
+                  const LabsSettingsPage(),
+                ),
               ),
           ],
         ),
@@ -269,6 +302,13 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                 value: _appState.fontFamily,
                 options: AppFonts.fontOptions,
                 onChanged: _appState.setFontFamily,
+              ),
+              SettingsTile(
+                icon: Icons.file_upload_outlined,
+                title: '导入字体',
+                value: 'TTF / OTF',
+                busy: _busy == '导入字体',
+                onTap: _importFont,
               ),
               SettingsSelectTile<int>(
                 icon: Icons.format_bold_rounded,
@@ -305,8 +345,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                 secondary: const Icon(Icons.visibility_off_outlined),
                 title: const Text('隐藏 NSFW 内容'),
                 value: enabled,
-                onChanged: (value) =>
-                    contentFilter.setEnabled(value, Instances.sp),
+                onChanged: (value) => contentFilter.setEnabled(value),
               ),
             ),
             if (!Instances.isDesktopPlatform)
@@ -333,7 +372,10 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
             SettingsTile(
               icon: Icons.security_outlined,
               title: '网络设置',
-              onTap: () => _push(const NetworkSettingsPage()),
+              onTap: () => NavigationService.push<void>(
+                context,
+                const NetworkSettingsPage(),
+              ),
             ),
           ],
         ),
@@ -360,7 +402,7 @@ class _AppSettingsPageState extends State<AppSettingsPage> {
                 icon: Icons.ios_share_rounded,
                 title: '分享日志',
                 busy: _busy == '分享日志',
-                onTap: () => _run('分享日志', AppLogger.instance.shareLogs),
+                onTap: () => _run('分享日志', Log.shareLogs),
               ),
           ],
         ),

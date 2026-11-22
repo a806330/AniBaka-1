@@ -6,7 +6,6 @@ import 'package:baka/api/anibaka_api.dart';
 import 'package:baka/api/bangumi_account_api.dart';
 import 'package:baka/api/bgm.dart';
 import 'package:baka/api/post.dart';
-import 'package:baka/core/http_request.dart';
 import 'package:baka/app/app_runtime.dart' show MonitoredImageCache;
 import 'package:baka/services/account/login_service.dart';
 import 'package:baka/services/account/bangumi_session.dart';
@@ -14,6 +13,7 @@ import 'package:baka/api/playback.dart';
 import 'package:baka/models/collection.dart';
 import 'package:baka/models/play_history.dart';
 import 'package:baka/models/app_user.dart';
+import 'package:baka/models/token_response.dart';
 import 'package:baka/pages/login/login_page.dart';
 import 'package:baka/pages/login/account_security_page.dart';
 import 'package:baka/utils/toast_utils.dart';
@@ -231,13 +231,12 @@ void main() {
     addTearDown(policy.dispose);
     final file = MemoryFileSystem().file('/cover.jpg');
     final offline = http.ClientException('offline');
-    final delegate = _ImageCache((url) async* {
-      if (url.contains('/cached/')) {
-        yield FileInfo(file, FileSource.Cache, DateTime.utc(2020), url);
-      }
-      throw offline;
-    });
-    final cache = MonitoredImageCache(delegate, policy);
+    final cache = _ImageCache(
+      policy,
+      FileInfo(file, FileSource.Cache, DateTime.utc(2020), 'cover'),
+      offline,
+    );
+    addTearDown(cache.dispose);
     for (var i = 0; i < 8; i++) {
       await expectLater(
         cache.getImageFile('https://images.test/cached/$i.jpg', maxWidth: 300),
@@ -248,7 +247,7 @@ void main() {
     expect(imageNotices, 0);
     for (var i = 0; i < 20; i++) {
       await expectLater(
-        cache.getFileStream('https://images.test/failed/$i.jpg'),
+        cache.getImageFile('https://images.test/failed/$i.jpg'),
         emitsInOrder([emitsError(same(offline)), emitsDone]),
       );
     }
@@ -772,7 +771,7 @@ void main() {
 
   test('changing QQ submits current password with the profile', () async {
     const user = AppUser(id: 1, name: 'user', qq: '123456', sign: '', level: 1);
-    await apiTransport.session.saveLoginInfo('access', user);
+    await apiTransport.session.login(const TokenResponse('access'), user);
     useClient(
       MockClient((request) async {
         final body = jsonDecode(request.body) as Map<String, dynamic>;
@@ -804,10 +803,9 @@ void main() {
   test(
     'email recovery omits stale credentials and preserves rejection reasons',
     () async {
-      await apiTransport.session.saveLoginInfo(
-        'stale-access',
+      await apiTransport.session.login(
+        TokenResponse('stale-access', expiresAt: DateTime.utc(2000)),
         const AppUser(id: 1, name: 'old', qq: '12345', sign: '', level: 1),
-        tokenExpiresAt: '2000-01-01T00:00:00Z',
       );
       final paths = <String>[];
       useClient(
@@ -857,8 +855,8 @@ void main() {
   test(
     'email binding retains authenticated identity and updated mailbox',
     () async {
-      await apiTransport.session.saveLoginInfo(
-        'access',
+      await apiTransport.session.login(
+        const TokenResponse('access'),
         const AppUser(id: 1, name: 'user', qq: '12345', sign: '', level: 1),
       );
       useClient(
@@ -1253,9 +1251,26 @@ class _StreamingClient extends http.BaseClient {
       handle(request);
 }
 
-class _ImageCache extends Fake implements BaseCacheManager, ImageCacheManager {
-  _ImageCache(this.responses);
-  final Stream<FileResponse> Function(String url) responses;
+class _ImageCache extends MonitoredImageCache {
+  _ImageCache(NetworkNotices notices, this.file, this.offline)
+    : super(
+        Config(
+          'test-images',
+          repo: NonStoringObjectProvider(),
+          fileSystem: _UnusedFileSystem(),
+        ),
+        notices,
+      );
+
+  final FileInfo file;
+  final http.ClientException offline;
+
+  @override
+  Future<FileInfo?> getFileFromCache(
+    String key, {
+    bool ignoreMemCache = false,
+  }) async =>
+      key.startsWith('resized_w300_') && key.contains('/cached/') ? file : null;
 
   @override
   Stream<FileResponse> getFileStream(
@@ -1263,15 +1278,7 @@ class _ImageCache extends Fake implements BaseCacheManager, ImageCacheManager {
     String? key,
     Map<String, String>? headers,
     bool withProgress = false,
-  }) => responses(url);
-
-  @override
-  Stream<FileResponse> getImageFile(
-    String url, {
-    String? key,
-    Map<String, String>? headers,
-    bool withProgress = false,
-    int? maxHeight,
-    int? maxWidth,
-  }) => responses(url);
+  }) => Stream.error(offline);
 }
+
+class _UnusedFileSystem extends Fake implements FileSystem {}

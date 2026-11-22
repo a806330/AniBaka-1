@@ -1,3 +1,4 @@
+import 'package:baka/core/app_logger.dart';
 import 'package:baka/core/content_filter.dart';
 import 'package:baka/models/skip_segment.dart';
 import 'package:baka/source/runtime/source_operation.dart';
@@ -5,8 +6,6 @@ import 'dart:async';
 import 'package:baka/utils/title_matcher.dart';
 import 'package:baka/models/bgm.dart';
 import 'package:baka/utils/json_values.dart';
-
-import 'package:flutter/foundation.dart';
 
 import 'package:baka/api/anibaka_api.dart';
 import 'package:baka/api/bgm.dart';
@@ -242,10 +241,29 @@ class PlaybackContent {
   String? _logoUrl;
   String get logoUrl => _logoUrl ?? AnimeDetailViewData.resolveLogoUrl(data);
 
-  /// A fresh projection for old views/search sheets; never shared writable state.
-  Map<String, dynamic> buildDetailData() {
+  ({
+    PlaybackRequest request,
+    BgmInfo bgmInfo,
+    Map<String, dynamic>? bgmDetail,
+    String? logo,
+  })?
+  _detailInputs;
+  Map<String, dynamic>? _detailData;
+
+  /// The item as the detail page and source search read it. One map is kept
+  /// until the request or its Bangumi metadata changes, so widgets given it
+  /// see the same item across rebuilds.
+  Map<String, dynamic> get detailData {
+    final inputs = (
+      request: request,
+      bgmInfo: bgmInfo,
+      bgmDetail: bgmDetailData,
+      logo: _logoUrl,
+    );
+    if (_detailData != null && _detailInputs == inputs) return _detailData!;
+    _detailInputs = inputs;
     final logo = logoUrl;
-    return {
+    return _detailData = Map.unmodifiable({
       ...data,
       'source': request.source,
       'bgmId': ?bgmInfo.subjectId,
@@ -253,7 +271,7 @@ class PlaybackContent {
       'bgmImageUrl': ?coverImageUrl,
       'bgmDetailData': ?bgmDetailData,
       if (logo.isNotEmpty) 'logoUrl': logo,
-    };
+    });
   }
 
   PlaybackMediaInfo get currentMediaInfo {
@@ -376,7 +394,7 @@ class PlaybackContent {
           }
         } catch (e) {
           if (lifetime.isCancelled || videoList.isEmpty) rethrow;
-          debugPrint('[PlaybackContent] Failed to load post detail: $e');
+          Log.w('Playback', 'Failed to load post detail: $e');
         } finally {
           detach();
         }
@@ -575,7 +593,7 @@ class PlaybackContent {
                 episodeId,
                 episodeIndex: episodeIndex,
               )?.url ??
-              await adapter.resolveDownloadUrl(episodeId);
+              (await adapter.resolvePlaybackMedia(episodeId)).url;
           return resolvedUrl.isEmpty ? null : resolvedUrl;
         }
 
@@ -641,7 +659,7 @@ class PlaybackContent {
       final resolvedLogo = AnimeDetailViewData.resolveLogoUrl(animeDetail);
       if (resolvedLogo.isNotEmpty) _logoUrl = resolvedLogo;
     } catch (e) {
-      debugPrint('获取 BGM 放映信息失败: $e');
+      Log.w('Playback', '获取 BGM 放映信息失败: $e');
       _bgmDetailFuture = null;
     }
   }

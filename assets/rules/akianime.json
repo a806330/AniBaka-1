@@ -2,14 +2,14 @@
   "format": "anx-rule/2",
   "id": "akianime",
   "name": "萌番 AkiAnime",
-  "baseUrl": "https://www.akianime.cc/",
-  "iconUrl": "https://www.akianime.cc/template/dsn2/static/img/ico.png",
-  "description": "萌番 AkiAnime 动漫源，源网址 https://www.akianime.cc/",
+  "baseUrl": "https://www.akianime.com/",
+  "iconUrl": "https://www.akianime.com/template/dsn2/static/img/ico.png",
+  "description": "萌番 AkiAnime 动漫源，源网址 https://www.akianime.com/",
   "pipeline": {
     "headers": {
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "Referer": "https://www.akianime.cc/"
+      "Referer": "https://www.akianime.com/"
     },
     "search": [
       {
@@ -19,11 +19,12 @@
       {
         "op": "searchList",
         "selectors": [
-          ".search-list",
-          ".vod-detail",
-          "#dataList .public-list-box"
+          ".vod-detail.search-list"
         ],
-        "detailPattern": "/bgmdetail/",
+        "linkSelector": ".detail-info > a[href^=\"/bgmdetail/\"]",
+        "titleSelector": "h3.slide-info-title",
+        "imageSelector": ".detail-pic img",
+        "imageAttr": "data-src",
         "keywordMatch": true
       }
     ],
@@ -31,28 +32,25 @@
       {
         "op": "follow",
         "headers": {
-          "Referer": "https://www.akianime.cc/"
+          "Referer": "https://www.akianime.com/"
         }
       },
       {
         "op": "episodes",
         "listSelectors": [
-          ".anthology-list-box",
-          ".anthology-list-play"
+          "ul.anthology-list-play"
         ],
         "tabSelectors": [
-          ".anthology-tab .swiper-slide",
-          ".anthology-tab a",
-          ".module-tab-item",
-          ".tab-item"
-        ]
+          ".anthology-tab a.swiper-slide"
+        ],
+        "tabAttr": "ownText"
       }
     ],
     "play": [
       {
         "op": "follow",
         "headers": {
-          "Referer": "https://www.akianime.cc/"
+          "Referer": "https://www.akianime.com/"
         }
       },
       {
@@ -110,7 +108,7 @@
               "op": "fetch",
               "url": "/static/js/playerconfig.js",
               "headers": {
-                "Referer": "https://www.akianime.cc/"
+                "Referer": "https://www.akianime.com/"
               }
             },
             {
@@ -146,7 +144,7 @@
               "op": "fetch",
               "url": "{parserBase:raw}{playerUrl:raw}",
               "headers": {
-                "Referer": "https://www.akianime.cc/"
+                "Referer": "https://www.akianime.com/"
               }
             },
             {

@@ -17,11 +17,12 @@
     {
       "op": "searchList",
       "selectors": [
-        ".search-item",
-        ".module-item",
-        "a[href*=\"/anime/\"]"
+        "li.hl-list-item"
       ],
-      "detailPattern": "/anime/",
+      "linkSelector": ".hl-item-title > a",
+      "titleSelector": ".hl-item-title > a",
+      "imageSelector": "a.hl-item-thumb",
+      "imageAttr": "data-original",
       "keywordMatch": true
     }
   ],
@@ -32,30 +33,23 @@
     {
       "op": "episodes",
       "listSelectors": [
-        "ul.hl-plays-list",
-        ".anthology-list-play",
-        ".module-player-list",
-        ".module-play-list",
-        ".play-list",
-        ".playlist",
-        ".episode-list",
-        ".content_playlist"
+        "ul.hl-plays-list"
       ],
       "tabSelectors": [
-        ".play-source-tab a",
-        ".source a"
-      ]
+        ".hl-plays-from a"
+      ],
+      "tabAttr": "alt"
     }
   ],
   "play": [
     {
+      "op": "fetch",
+      "url": "{episodeId:raw}"
+    },
+    {
       "op": "first",
       "branches": [
         [
-          {
-            "op": "fetch",
-            "url": "{episodeId:raw}"
-          },
           {
             "op": "playerAaaa"
           },
@@ -66,6 +60,60 @@
           },
           {
             "op": "videoUrl"
+          }
+        ],
+        [
+          {
+            "op": "playerAaaa"
+          },
+          {
+            "op": "regex",
+            "pattern": "^(https?://[^\\s]+|[A-Za-z0-9+/=_-]+)$",
+            "group": 1
+          },
+          {
+            "op": "fetch",
+            "url": "/player/?url={url}",
+            "headers": { "Referer": "{episodeId:raw}" }
+          },
+          {
+            "op": "setVar",
+            "name": "playerHtml",
+            "value": "{url:raw}"
+          },
+          {
+            "op": "regex",
+            "pattern": "\\bconst\\s+sessionKey\\s*=\\s*\"([^\"]+)\"",
+            "group": 1
+          },
+          {
+            "op": "setVar",
+            "name": "sessionKey",
+            "value": "{url:raw}"
+          },
+          {
+            "op": "template",
+            "value": "{playerHtml:raw}"
+          },
+          {
+            "op": "regex",
+            "pattern": "\\bconst\\s+encryptedUrl\\s*=\\s*\"([A-Za-z0-9+/=]+)\"",
+            "group": 1
+          },
+          {
+            "op": "crypto",
+            "algo": "aes-cbc",
+            "key": "{sessionKey:raw}",
+            "ivPrefix": true
+          },
+          {
+            "op": "regex",
+            "pattern": "^(https?://\\S+\\.(?:m3u8|mp4|mkv|flv)(?:[?#]\\S*)?)$",
+            "group": 1
+          },
+          {
+            "op": "setMediaHeaders",
+            "headers": { "Referer": "https://www.moonci.com/player/" }
           }
         ],
         [
